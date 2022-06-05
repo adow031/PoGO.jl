@@ -10,7 +10,7 @@ function get_model(x::Union{VariableRef,AffExpr})
     end
 end
 
-function linearise(x::Union{VariableRef,AffExpr}, func::Function, n::Int)
+function linearise(x::Union{VariableRef,AffExpr}, func::Function, n::Int; convex::Bool = false)
     model = get_model(x)
 
     fx=@variable(model)
@@ -28,10 +28,13 @@ function linearise(x::Union{VariableRef,AffExpr}, func::Function, n::Int)
     set_upper_bound(fx,maximum(fxi))
 
     α=Dict()
-    ϵα=Dict()
+
+    if !convex
+		ϵα=Dict()
+	end
 
     for i in 0:n
-        if i!=n
+        if i!=n && !convex
             ϵα[i]=@variable(model,binary=true)
         end
         α[i]=@variable(model)
@@ -43,18 +46,19 @@ function linearise(x::Union{VariableRef,AffExpr}, func::Function, n::Int)
     @constraint(model,sum(α[i]*xi[i+1] for i in 0:n)==x)
     @constraint(model,sum(α[i]*fxi[i+1] for i in 0:n)==fx)
 
+	if !convex
+	    for i in 2:n-1
+	        @constraint(model,α[i]<=ϵα[i]-ϵα[i-2])
+	    end
 
-    for i in 2:n-1
-        @constraint(model,α[i]<=ϵα[i]-ϵα[i-2])
-    end
+	    for i in 0:n-2
+	        @constraint(model,ϵα[i]<=ϵα[i+1])
+	    end
 
-    for i in 0:n-2
-        @constraint(model,ϵα[i]<=ϵα[i+1])
-    end
-
-    @constraint(model,α[0]<=ϵα[0])
-    @constraint(model,α[1]<=ϵα[1])
-    @constraint(model,α[n]<=1-ϵα[n-2])
+	    @constraint(model,α[0]<=ϵα[0])
+	    @constraint(model,α[1]<=ϵα[1])
+	    @constraint(model,α[n]<=1-ϵα[n-2])
+	end
 
     return fx
 end
@@ -100,7 +104,5 @@ function bilinear(x::Union{VariableRef,AffExpr}, y::Union{VariableRef,AffExpr}, 
 end
 
 export bilinear,
-	linearise    
-end
-
+	linearise
 end
