@@ -1,7 +1,10 @@
 name = "Panco"
-uuid = "15e0fbc8-c171-4ec5-8561-bc797a616952"
+uuid = "043b967d-4e64-47a6-97d4-0007e6b4905c"
 authors = ["Anthony Downward"]
 version = "0.1.0"
+
+[deps]
+JuMP = "4076af6c-e467-56ae-b986-b466b2749572"
 
 [compat]
 julia = "1"
