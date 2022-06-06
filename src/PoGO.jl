@@ -1,4 +1,4 @@
-module Panco
+module PoGO
 
 using JuMP
 
