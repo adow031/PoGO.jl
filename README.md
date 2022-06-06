@@ -1,1 +1,1 @@
-# PoGO.jl: Piecewise-linear approximation for General Optimization
+# PoGO.jl: Piecewise-linear approximation for Global Optimization
