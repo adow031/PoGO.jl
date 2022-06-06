@@ -1,1 +1,1 @@
-# Panco: Piecewise approximation for non-convex optimization
+# PoGO.jl: Piecewise-linear approximation for General Optimization
