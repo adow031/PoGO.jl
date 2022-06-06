@@ -1,4 +1,4 @@
-using Panco, Test, JuMP, GLPK
+using PoGO, Test, JuMP, GLPK
 
 function nonlinear(n::Int, method::Symbol)
     model = JuMP.Model(GLPK.Optimizer)

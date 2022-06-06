@@ -1,4 +1,4 @@
-using JuMP, Panco, Gurobi, Plots
+using JuMP, PoGO, Gurobi, Plots
 
 function particle(p::Int, n::Int, method::Symbol)
     model = JuMP.Model(Gurobi.Optimizer)
