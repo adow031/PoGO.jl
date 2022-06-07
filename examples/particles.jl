@@ -25,7 +25,7 @@ function particle(p::Int, n::Int, method::Symbol)
     println(value.(model[:x]))
     println(value.(model[:y]))
 
-    return plot(
+    return Plots.plot(
         value.(model[:x]),
         value.(model[:y]),
         seriestype = :scatter,
@@ -33,7 +33,7 @@ function particle(p::Int, n::Int, method::Symbol)
     )
 end
 
-particle(7, 6, :SOS1)
-particle(7, 6, :SOS2)
-particle(7, 6, :binary)
-particle(7, 6, :echelon)
+particle(5, 10, :SOS1)
+particle(7, 10, :SOS2)
+particle(5, 10, :binary)
+particle(7, 10, :echelon)
