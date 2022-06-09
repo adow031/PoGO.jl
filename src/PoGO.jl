@@ -7,5 +7,5 @@ include("approximation.jl")
 include("bilinear.jl")
 include("visualisation.jl")
 
-export bilinear, approximate, exponential, plot_approximation
+export bilinear, approximate, power, plot_approximation
 end

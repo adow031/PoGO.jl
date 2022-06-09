@@ -1,12 +1,12 @@
 using JuMP, PoGO, Gurobi, Plots
 
-function exponential_test(n::Int, type::Symbol)
+function power_test(n::Int, type::Symbol)
     model = JuMP.Model(Gurobi.Optimizer)
     @variable(model, 0.1 <= x <= 3)
     @variable(model, 0.1 <= y <= 3)
     @constraint(model, x + y == 4)
 
-    @objective(model, Max, PoGO.exponential(x, y, n; type = type))
+    @objective(model, Max, PoGO.power(x, y, n; type = type))
     optimize!(model)
 
     println("x: $(value(x))")
@@ -19,7 +19,7 @@ end
 gap = Float64[]
 
 for i in 4:2:50
-    push!(gap, exponential_test(i, :upper) - exponential_test(i, :lower))
+    push!(gap, power_test(i, :upper) - power_test(i, :lower))
 end
 
 Plots.plot(4:2:50, gap)

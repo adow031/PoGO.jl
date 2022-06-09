@@ -6,6 +6,32 @@ function get_model(x::Union{VariableRef,AffExpr})
     end
 end
 
+function get_type(x::Union{VariableRef,AffExpr})
+    x_type = :continuous
+
+    if typeof(x) == VariableRef
+        if is_binary(x)
+            x_type = :binary
+        elseif is_integer(x)
+            x_type = :integer
+        end
+    else
+        x_type = abs(x.constant - round(x.constant)) < 10^-10 ? :integer : :continuous
+
+        if x_type == :integer
+            for (var, coeff) in x.terms
+                if !(is_binary(var) || is_integer(var)) ||
+                   abs(coeff - round(coeff)) > 10^-10
+                    x_type = :continuous
+                    return
+                end
+            end
+        end
+    end
+
+    return x_type
+end
+
 function find_bounds(x::Union{VariableRef,AffExpr})
     if typeof(x) == VariableRef
         if is_binary(x)

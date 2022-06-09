@@ -16,11 +16,11 @@ function bilinear(
     lx, ux = find_bounds(x)
     ly, uy = find_bounds(y)
 
+    x_type = get_type(x)
+    y_type = get_type(y)
+
     if n == 0
-        if typeof(x) == VariableRef &&
-           is_binary(x) &&
-           typeof(y) == VariableRef &&
-           is_binary(y)
+        if x_type == :binary && y_type == :binary
             xy = @variable(model, binary = true) # doesn't need to be binary, but it may help with branch-and-bound.
             @constraint(model, xy >= x + y - 1)
             @constraint(model, xy <= x)
@@ -28,7 +28,7 @@ function bilinear(
             return xy
         end
 
-        if typeof(x) == VariableRef && is_binary(x)
+        if x_type == :binary
             xy = @variable(model)
             @constraint(model, xy <= (uy - ly) * x + y)
             @constraint(model, xy >= -(uy - ly) * x + y)
@@ -37,7 +37,7 @@ function bilinear(
             return xy
         end
 
-        if typeof(y) == VariableRef && is_binary(y)
+        if y_type == :binary
             xy = @variable(model)
             @constraint(model, xy <= (ux - lx) * y + x)
             @constraint(model, xy >= -(ux - lx) * y + x)
@@ -46,38 +46,36 @@ function bilinear(
             return xy
         end
 
-        if typeof(x) == VariableRef && is_integer(x)
-            if typeof(y) != VariableRef || !is_integer(y) || uy - ly >= ux - lx
-                xy = @variable(model)
+        if x_type == :integer && (y_type != :integer || uy - ly >= ux - lx)
+            xy = @variable(model)
 
-                ϵ = Dict()
-                for i in lx:ux
-                    ϵ[i] = @variable(model, binary = true)
-                end
-                for i in (lx+1):ux
-                    @constraint(model, ϵ[i-1] <= ϵ[i])
-                end
-                @constraint(model, ϵ[ux] == 1)
-                @constraint(
-                    model,
-                    x == lx * ϵ[lx] + sum(i * (ϵ[i] - ϵ[i-1]) for i in (lx+1):ux)
-                )
-
-                mx = max(uy * ux, ly * lx, uy * ux, ly * lx)
-                mn = min(uy * ux, ly * lx, uy * ux, ly * lx)
-
-                for i in (lx+1):ux
-                    @constraint(model, xy <= (mx - mn) * (1 - ϵ[i] + ϵ[i-1]) + i * y)
-                    @constraint(model, xy >= -(mx - mn) * (1 - ϵ[i] + ϵ[i-1]) + i * y)
-                end
-
-                @constraint(model, xy <= (mx - mn) * (1 - ϵ[lx]) + lx * y)
-
-                return xy
+            ϵ = Dict()
+            for i in lx:ux
+                ϵ[i] = @variable(model, binary = true)
             end
+            for i in (lx+1):ux
+                @constraint(model, ϵ[i-1] <= ϵ[i])
+            end
+            @constraint(model, ϵ[ux] == 1)
+            @constraint(
+                model,
+                x == lx * ϵ[lx] + sum(i * (ϵ[i] - ϵ[i-1]) for i in (lx+1):ux)
+            )
+
+            mx = max(uy * ux, ly * lx, uy * ux, ly * lx)
+            mn = min(uy * ux, ly * lx, uy * ux, ly * lx)
+
+            for i in (lx+1):ux
+                @constraint(model, xy <= (mx - mn) * (1 - ϵ[i] + ϵ[i-1]) + i * y)
+                @constraint(model, xy >= -(mx - mn) * (1 - ϵ[i] + ϵ[i-1]) + i * y)
+            end
+
+            @constraint(model, xy <= (mx - mn) * (1 - ϵ[lx]) + lx * y)
+
+            return xy
         end
 
-        if typeof(y) == VariableRef && is_integer(y)
+        if y_type == :integer
             xy = @variable(model)
 
             ϵ = Dict()
@@ -151,7 +149,7 @@ function bilinear(
     return xy
 end
 
-function exponential(
+function power(
     x::Union{VariableRef,AffExpr},
     y::Union{VariableRef,AffExpr},
     n::Int;

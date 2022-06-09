@@ -27,6 +27,87 @@ function nonlinear(n::Int, method::Symbol)
     return [value(model[:x]), value(model[:y]), objective_value(model)]
 end
 
+function binary_bilinear(profit_xy, cost_x, cost_y)
+    model = JuMP.Model(GLPK.Optimizer)
+
+    @variable(model, x, Bin)
+    @variable(model, y, Bin)
+
+    @objective(model, Max, profit_xy * bilinear(x, y) - cost_x * x - cost_y * y)
+
+    optimize!(model)
+    return objective_value(model)
+end
+
+function fixed_cost_investment(cost)
+    model = JuMP.Model(GLPK.Optimizer)
+
+    @variable(model, 0 <= z <= 3, Int)
+    @variable(model, 0 <= capacity <= 40)
+    @variable(model, x >= 0)
+    @variable(model, y >= 0)
+
+    @constraint(model, x <= bilinear(z, capacity))
+    @constraint(model, x + y == 50)
+
+    @objective(model, Min, x + 10 * y + 6 * capacity + cost * z)
+
+    optimize!(model)
+    return println(value(z)) | return objective_value(model)
+end
+
+function integer_bilinear(param::Real)
+    model = JuMP.Model(GLPK.Optimizer)
+
+    @variable(model, 0 <= x <= 10, Int)
+    @variable(model, 0 <= y <= 10, Int)
+    @constraint(model, x + param * y == 10)
+
+    @objective(model, Max, bilinear(x, y))
+
+    optimize!(model)
+    return objective_value(model)
+end
+
+function approximate_cubic(n::Int, type::Symbol)
+    model = JuMP.Model(GLPK.Optimizer)
+
+    @variable(model, -1 <= x <= 2.5)
+
+    @objective(
+        model,
+        Max,
+        approximate(
+            x,
+            a -> [a^3 - 3a^2 + a + 2, 3a^2 - 6a + 1],
+            n,
+            type = type,
+            initial = :concave,
+            knots = [1.0],
+        )
+    )
+    optimize!(model)
+    return objective_value(model)
+end
+
+function bilinear_affexpr(cost)
+    model = JuMP.Model(GLPK.Optimizer)
+
+    @variable(model, z[1:2], Bin)
+    @variable(model, 0 <= capacity <= 40)
+    @variable(model, x >= 0)
+    @variable(model, y >= 0)
+
+    @constraint(model, x <= bilinear(sum(z), capacity))
+    @constraint(model, x + y == 50)
+
+    @objective(model, Min, x + 10 * y + cost * bilinear(z[1], z[2]))
+
+    optimize!(model)
+
+    return objective_value(model)
+end
+
 @testset "PoGO.jl" begin
     result = nonlinear(10, :binary)
     @test sum(abs.(result - [1.6, 4.0, 0.37866])) ≈ 0.0 atol = 1e-4
@@ -36,4 +117,23 @@ end
 
     result = nonlinear(50, :echelon)
     @test sum(abs.(result - [1.44, 3.84, 0.3923])) ≈ 0.0 atol = 1e-4
+
+    result = nonlinear(50, :echelon)
+    @test sum(abs.(result - [1.44, 3.84, 0.3923])) ≈ 0.0 atol = 1e-4
+
+    @test binary_bilinear(10, 4, 5) ≈ 1.0 atol = 1e-4
+    @test binary_bilinear(10, 4, 1) ≈ 5.0 atol = 1e-4
+    @test binary_bilinear(10, 6, 5) ≈ 0.0 atol = 1e-4
+
+    @test integer_bilinear(1) ≈ 25.0 atol = 1e-4
+    @test integer_bilinear(3) ≈ 8.0 atol = 1e-4
+
+    @test bilinear_affexpr(80) ≈ 130.0 atol = 1e-4
+    @test bilinear_affexpr(120) ≈ 140.0 atol = 1e-4
+
+    @test fixed_cost_investment(40) ≈ 270.0 atol = 1e-4
+    @test fixed_cost_investment(60) ≈ 320.0 atol = 1e-4
+
+    @test approximate_cubic(10, :upper) ≈ 2.1146 atol = 1e-4
+    @test approximate_cubic(10, :lower) ≈ 2.088 atol = 1e-4
 end
