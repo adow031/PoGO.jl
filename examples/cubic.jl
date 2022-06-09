@@ -1,40 +1,43 @@
-using JuMP, PoGO, Gurobi, Plots
+using JuMP, PoGO
 
-function cubic(rhs::Real, n::Int, type::Symbol)
-    model = JuMP.Model(Gurobi.Optimizer)
-    @variable(model, -1 <= x <= 2.5)
+# Uncomment appropriate solver
 
-    @constraint(model, x == rhs)
+# using Gurobi
+# optimizer =
+#     optimizer_with_attributes(() -> Gurobi.Optimizer(), "OutputFlag" => 0, "MIPGap" => 0.0)
+#
+# using CPLEX
+# optimizer = optimizer_with_attributes(
+#     CPLEX.Optimizer,
+#     "CPXPARAM_MIP_Tolerances_MIPGap" => 0.0,
+#     "CPX_PARAM_SCRIND" => 0,
+# )
+#
+# using GLPK
+# optimizer = optimizer_with_attributes(
+#     (method = GLPK.INTERIOR) -> GLPK.Optimizer(),
+#     "msg_lev" => 0,
+#     "mip_gap" => 0.0,
+# )
+#
+# using Cbc
+# optimizer = optimizer_with_attributes(Cbc.Optimizer, "logLevel" => 0, "ratioGap" => 0.0)
 
-    @objective(
-        model,
-        Max,
-        approximate(
-            x,
-            a -> [a^3 - 3a^2 + a + 2, 3a^2 - 6a + 1],
-            n,
-            type = type,
-            initial = :concave,
-            knots = [1.0],
-        )
+function cubic_plot(; n = 2, type = :interior)
+    return plot_approximation(
+        optimizer,
+        a -> [a^3 - 3a^2 + a + 2, 3a^2 - 6a + 1],
+        :concave,
+        -1.0,
+        2.5,
+        n,
+        type,
+        detail = 20,
+        knots = [1.0],
     )
-    optimize!(model)
-    return objective_value(model)
 end
 
-function approximate_cubic(; step = 0.05, n = 10, type = :interior)
-    x = collect(-1:step:2.5)
-    y = Float64[]
-    for i in x
-        println(i)
-        push!(y, cubic(i, n, type))
-    end
-
-    Plots.plot(x, y)
-    return Plots.plot!(x, [i^3 - 3i^2 + i + 2 for i in x])
-end
-
-approximate_cubic(step = 0.05, n = 4, type = :interior)
-approximate_cubic(step = 0.01, n = 4, type = :tangent_cuts)
-approximate_cubic(step = 0.01, n = 4, type = :lower)
-approximate_cubic(step = 0.01, n = 4, type = :upper)
+cubic_plot(n = 4, type = :interior)
+cubic_plot(n = 4, type = :tangent_cuts)
+cubic_plot(n = 4, type = :lower)
+cubic_plot(n = 4, type = :upper)
