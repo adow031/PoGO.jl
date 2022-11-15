@@ -16,8 +16,8 @@ function bilinear(
     lx, ux = find_bounds(x)
     ly, uy = find_bounds(y)
 
-    x_type = get_type(x)
-    y_type = get_type(y)
+    x_type, x_values = get_type(x)
+    y_type, y_values = get_type(y)
 
     if n == 0
         if x_type == :binary && y_type == :binary
@@ -30,75 +30,127 @@ function bilinear(
 
         if x_type == :binary
             xy = @variable(model)
-            @constraint(model, xy <= (uy - ly) * x + y)
-            @constraint(model, xy >= -(uy - ly) * x + y)
-            @constraint(model, xy <= uy * (1 - x))
-            @constraint(model, xy >= -uy * (1 - x))
+            if ly >= 0
+                @constraint(model, xy <= y)
+            else
+                @constraint(model, xy <= y - ly * (1 - x))
+            end
+            if uy <= 0
+                @constraint(model, xy >= y)
+            else
+                @constraint(model, xy >= y - uy * (1 - x))
+            end
+            @constraint(model, xy <= uy * x)
+            @constraint(model, xy >= ly * x)
             return xy
         end
 
         if y_type == :binary
             xy = @variable(model)
-            @constraint(model, xy <= (ux - lx) * y + x)
-            @constraint(model, xy >= -(ux - lx) * y + x)
-            @constraint(model, xy <= ux * (1 - y))
-            @constraint(model, xy >= -ux * (1 - y))
+            if lx >= 0
+                @constraint(model, xy <= x)
+            else
+                @constraint(model, xy <= x - lx * (1 - y))
+            end
+            if ux <= 0
+                @constraint(model, xy >= x)
+            else
+                @constraint(model, xy >= x - ux * (1 - y))
+            end
+            @constraint(model, xy <= ux * y)
+            @constraint(model, xy >= lx * y)
             return xy
         end
 
-        if x_type == :integer && (y_type != :integer || uy - ly >= ux - lx)
-            xy = @variable(model)
-
-            ϵ = Dict()
-            for i in lx:ux
-                ϵ[i] = @variable(model, binary = true)
-            end
-            for i in (lx+1):ux
-                @constraint(model, ϵ[i-1] <= ϵ[i])
-            end
-            @constraint(model, ϵ[ux] == 1)
-            @constraint(
-                model,
-                x == lx * ϵ[lx] + sum(i * (ϵ[i] - ϵ[i-1]) for i in (lx+1):ux)
-            )
-
-            mx = max(uy * ux, ly * lx, uy * ux, ly * lx)
-            mn = min(uy * ux, ly * lx, uy * ux, ly * lx)
-
-            for i in (lx+1):ux
-                @constraint(model, xy <= (mx - mn) * (1 - ϵ[i] + ϵ[i-1]) + i * y)
-                @constraint(model, xy >= -(mx - mn) * (1 - ϵ[i] + ϵ[i-1]) + i * y)
-            end
-
-            @constraint(model, xy <= (mx - mn) * (1 - ϵ[lx]) + lx * y)
-
-            return xy
+        if x_values == nothing
+            x_values = collect(lx:ux)
+        end
+        if y_values == nothing
+            y_values = collect(ly:uy)
         end
 
-        if y_type == :integer
+        if (x_type == :integer || y_type == :integer)
+            if min(length(y_values), length(x_values)) >= 50
+                @warn(
+                    "The number of discrete levels being modelled ($(min(length(y_values),length(x_values)))) within the bilinear function is large, consider using an approximation"
+                )
+            end
             xy = @variable(model)
 
-            ϵ = Dict()
-            for i in ly:uy
-                ϵ[i] = @variable(model, binary = true)
-            end
-            for i in (ly+1):uy
-                @constraint(model, ϵ[i-1] <= ϵ[i])
-            end
-
-            @constraint(
-                model,
-                y == ly * ϵ[lx] + sum(i * (ϵ[i] - ϵ[i-1]) for i in (ly+1):uy)
+            mx = max(
+                maximum(y_values) * maximum(x_values),
+                minimum(y_values) * minimum(x_values),
+                maximum(y_values) * minimum(x_values),
+                minimum(y_values) * maximum(x_values),
+            )
+            mn = min(
+                maximum(y_values) * maximum(x_values),
+                minimum(y_values) * minimum(x_values),
+                maximum(y_values) * minimum(x_values),
+                minimum(y_values) * maximum(x_values),
             )
 
-            mx = max(uy * ux, ly * lx, uy * ux, ly * lx)
-            mn = min(uy * ux, ly * lx, uy * ux, ly * lx)
+            set_lower_bound(xy, mn)
+            set_upper_bound(xy, mx)
 
-            for i in (ly+1):uy
-                @constraint(model, xy <= (mx - mn) * (1 - ϵ[i] + ϵ[i-1]) + i * x)
-                @constraint(model, xy >= -(mx - mn) * (1 - ϵ[i] + ϵ[i-1]) + i * x)
+            ϵ = Dict()
+
+            if x_type == :integer &&
+               (y_type != :integer || length(y_values) >= length(x_values))
+                ϵ[0] = 0.0
+                ϵ[length(x_values)] = 1.0
+                for i in 1:length(x_values)-1
+                    ϵ[i] = @variable(model, binary = true)
+                end
+
+                for i in 2:length(x_values)-1
+                    @constraint(model, ϵ[i-1] <= ϵ[i])
+                end
+                @constraint(
+                    model,
+                    x == sum(x_values[i] * (ϵ[i] - ϵ[i-1]) for i in 1:length(x_values))
+                )
+
+                for i in 1:length(x_values)
+                    @constraint(
+                        model,
+                        xy <= (mx - mn) * (1 - ϵ[i] + ϵ[i-1]) + x_values[i] * y
+                    )
+                    @constraint(
+                        model,
+                        xy >= -(mx - mn) * (1 - ϵ[i] + ϵ[i-1]) + x_values[i] * y
+                    )
+                end
+
+                return xy
+            else
+                ϵ[0] = 0.0
+                ϵ[length(y_values)] = 1.0
+                for i in 1:length(y_values)-1
+                    ϵ[i] = @variable(model, binary = true)
+                end
+
+                for i in 2:length(y_values)-1
+                    @constraint(model, ϵ[i-1] <= ϵ[i])
+                end
+                @constraint(
+                    model,
+                    y == sum(y_values[i] * (ϵ[i] - ϵ[i-1]) for i in 1:length(y_values))
+                )
+
+                for i in 1:length(y_values)
+                    @constraint(
+                        model,
+                        xy <= (mx - mn) * (1 - ϵ[i] + ϵ[i-1]) + y_values[i] * x
+                    )
+                    @constraint(
+                        model,
+                        xy >= -(mx - mn) * (1 - ϵ[i] + ϵ[i-1]) + y_values[i] * x
+                    )
+                end
+
+                return xy
             end
-            return xy
         end
     end
 
@@ -127,7 +179,7 @@ function bilinear(
 
     a² = approximate(
         ((x - (lx + ux) / 2) / (ux - lx) + (y - (ly + uy) / 2) / (uy - ly)) / 2,
-        x -> [x^2, 2x],
+        x -> x^2,
         2 * n,
         method = method,
         type = type,
@@ -135,7 +187,7 @@ function bilinear(
 
     b² = approximate(
         ((x - (lx + ux) / 2) / (ux - lx) - (y - (ly + uy) / 2) / (uy - ly)) / 2,
-        x -> [x^2, 2x],
+        x -> x^2,
         2 * n,
         method = method,
         type = type2,
@@ -164,22 +216,8 @@ function power(
         error("Currently PoGO.jl cannot model exponents of zero or negative numbers.")
     end
 
-    z = approximate(
-        x,
-        a -> [log(a), 1 / a],
-        n,
-        type = type,
-        initial = :concave,
-        method = method,
-    )
+    z = approximate(x, a -> log(a), n, type = type, initial = :concave, method = method)
     w = bilinear(y, z, n, method = method, type = type)
-    v = approximate(
-        w,
-        a -> [exp(a), exp(a)],
-        n,
-        type = type,
-        initial = :convex,
-        method = method,
-    )
+    v = approximate(w, a -> exp(a), n, type = type, initial = :convex, method = method)
     return v
 end

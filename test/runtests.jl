@@ -53,7 +53,7 @@ function fixed_cost_investment(cost)
     @objective(model, Min, x + 10 * y + 6 * capacity + cost * z)
 
     optimize!(model)
-    return println(value(z)) | return objective_value(model)
+    return value(z) | return objective_value(model)
 end
 
 function integer_bilinear(param::Real)
@@ -79,11 +79,10 @@ function approximate_cubic(n::Int, type::Symbol)
         Max,
         approximate(
             x,
-            a -> [a^3 - 3a^2 + a + 2, 3a^2 - 6a + 1],
+            a -> a^3 - 3a^2 + a + 2,
             n,
             type = type,
-            initial = :concave,
-            knots = [1.0],
+            knots = [(-1.0, :concave), (1.0, :convex)],
         )
     )
     optimize!(model)
@@ -108,6 +107,49 @@ function bilinear_affexpr(cost)
     return objective_value(model)
 end
 
+function approximate_cubic_discrete(obj, lb, ub)
+    model = JuMP.Model(GLPK.Optimizer)
+
+    @variable(model, lb <= x <= ub, Int)
+
+    if obj == :max
+        @objective(model, Max, approximate(x, a -> a^3 - 3a^2 + a + 2))
+    else
+        @objective(model, Min, approximate(x, a -> a^3 - 3a^2 + a + 2))
+    end
+    optimize!(model)
+
+    return objective_value(model)
+end
+
+function in_sets(cx::Real, cy::Real)
+    sets = [
+        [(0.0, 0.0), (1.0, 0.0), (1.0, 1.0), (0.0, 1.0)],
+        [(2.0, 2.0), (3.0, 2.0), (3.0, 3.0), (2.0, 3.0)],
+    ]
+
+    model = JuMP.Model(GLPK.Optimizer)
+
+    @variable(model, x)
+    @variable(model, y)
+    @variable(model, d)
+
+    z = xy_in_sets(x, y, sets, update_bounds = true)
+
+    @constraint(
+        model,
+        d >= approximate(x - cx, a -> a^2, 21) + approximate(y - cy, a -> a^2, 21)
+    )
+
+    @objective(model, Min, d)
+
+    optimize!(model)
+
+    return [value(x), value(y)]
+end
+
+result = nonlinear(10, :binary)
+approximate_cubic(10, :upper)
 @testset "PoGO.jl" begin
     result = nonlinear(10, :binary)
     @test sum(abs.(result - [1.6, 4.0, 0.37866])) ≈ 0.0 atol = 1e-4
@@ -136,4 +178,18 @@ end
 
     @test approximate_cubic(10, :upper) ≈ 2.1146 atol = 1e-4
     @test approximate_cubic(10, :lower) ≈ 2.088 atol = 1e-4
+
+    @test approximate_cubic_discrete(:max, -1, 4.5) ≈ 22 atol = 1e-4
+    @test approximate_cubic_discrete(:max, -1, 2.5) ≈ 2 atol = 1e-4
+    @test approximate_cubic_discrete(:min, -1, 2) ≈ -3 atol = 1e-4
+    @test approximate_cubic_discrete(:min, -1.5, 2) ≈ -3 atol = 1e-4
+
+    @test isapprox(in_sets(-1, -1), [0.0, 0.0]; atol = 1e-4)
+    @test isapprox(in_sets(-1, 1), [0.0, 1.0]; atol = 1e-4)
+    @test isapprox(in_sets(1, -1), [1.0, 0.0]; atol = 1e-4)
+    @test isapprox(in_sets(1.2, 1.2), [1.0, 1.0]; atol = 1e-4)
+    @test isapprox(in_sets(1.8, 1.8), [2.0, 2.0]; atol = 1e-4)
+    @test isapprox(in_sets(1, 4), [2.0, 3.0]; atol = 1e-4)
+    @test isapprox(in_sets(4, 1), [3.0, 2.0]; atol = 1e-4)
+    @test isapprox(in_sets(4, 4), [3.0, 3.0]; atol = 1e-4)
 end
