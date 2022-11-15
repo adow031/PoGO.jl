@@ -69,12 +69,7 @@ function bilinear(
             y_values = collect(ly:uy)
         end
 
-        if (x_type == :integer || y_type == :integer)
-            if min(length(y_values), length(x_values)) >= 50
-                @warn(
-                    "The number of discrete levels being modelled ($(min(length(y_values),length(x_values)))) within the bilinear function is large, consider using an approximation"
-                )
-            end
+        if (x_type ∈ [:integer,:discrete] || y_type ∈ [:integer,:discrete])
             xy = @variable(model)
 
             mx = max(
@@ -95,8 +90,13 @@ function bilinear(
 
             ϵ = Dict()
 
-            if x_type == :integer &&
-               (y_type != :integer || length(y_values) >= length(x_values))
+            if x_type ∈ [:integer,:discrete] &&
+               (y_type ∉ [:integer,:discrete] || length(y_values) >= length(x_values))
+                if length(x_values) >= 50
+                   @warn(
+                       "The number of discrete levels being modelled ($(length(x_values))) within the bilinear function is large, consider using an approximation"
+                   )
+                end
                 ϵ[0] = 0.0
                 ϵ[length(x_values)] = 1.0
                 for i in 1:length(x_values)-1
@@ -124,6 +124,11 @@ function bilinear(
 
                 return xy
             else
+                if length(y_values) >= 50
+                   @warn(
+                       "The number of discrete levels being modelled ($(length(y_values))) within the bilinear function is large, consider using an approximation"
+                   )
+                end
                 ϵ[0] = 0.0
                 ϵ[length(y_values)] = 1.0
                 for i in 1:length(y_values)-1
@@ -212,12 +217,29 @@ function power(
         error("Invalid method.")
     end
 
-    if lower_bound(x) < 10^-6
-        error("Currently PoGO.jl cannot model exponents of zero or negative numbers.")
-    end
+    lx, ux = find_bounds(x,ignore_errors=true)
 
-    z = approximate(x, a -> log(a), n, type = type, initial = :concave, method = method)
-    w = bilinear(y, z, n, method = method, type = type)
-    v = approximate(w, a -> exp(a), n, type = type, initial = :convex, method = method)
-    return v
+    if lx >= 1e-6
+        z = approximate(x, a -> log(a), n, type = type, method = method)
+        w = bilinear(y, z, n, method = method, type = type)
+        v = approximate(w, a -> exp(a), n, type = type, method = method)
+        return v
+    elseif ux <= -1e-6
+        y_type, y_values = get_type(y)
+        if y_type ∈ [:binary,:integer]
+            z = approximate(x, a -> log(-a), n, type = type, method = method)
+            w = bilinear(y, z, n, method = method, type = type)
+            v = approximate(w, a -> exp(a), n, type = type, method = method)
+            u = approximate(y, a -> (-1)^round(Int,a))
+            set_integer(u)
+            set_lower_bound(u,-1.0)
+            set_upper_bound(u,1.0)
+            p = bilinear(u, v, n, method = method, type = type)
+            return p
+        else
+            error("A negative number must have an integer or discrete exponent.")
+        end
+    else
+        error("Currently PoGO.jl cannot model exponents of near-zero numbers.")
+    end
 end

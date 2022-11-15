@@ -32,7 +32,7 @@ in_sets(1, -2) == (2.0, 3.0)
 in_sets(2, -1) == (0.0, 1.0)
 in_sets(-1, 2) == (1.0, 0.0)
 
-function in_sets(cx::Real, cy::Real)
+function in_sets2(cx::Real, cy::Real)
     sets = [
         [(0.0, 0.0), (1.0, 0.0), (1.0, 1.0), (0.0, 1.0)],
         [(2.0, 2.0), (3.0, 2.0), (3.0, 3.0), (2.0, 3.0)],
@@ -61,14 +61,14 @@ function in_sets(cx::Real, cy::Real)
     return plot!((value(x), value(y)), seriestype = :scatter)
 end
 
-in_sets(-1, -1)
-in_sets(-1, 1)
-in_sets(1, -1)
-in_sets(1.2, 1.2)
-in_sets(1.8, 1.8)
-in_sets(1, 4)
-in_sets(4, 1)
-in_sets(4, 4)
+in_sets2(-1, -1)
+in_sets2(-1, 1)
+in_sets2(1, -1)
+in_sets2(1.2, 1.2)
+in_sets2(1.8, 1.8)
+in_sets2(1, 4)
+in_sets2(4, 1)
+in_sets2(4, 4)
 
 function dynamic_set()
     model = JuMP.Model(optimizer)

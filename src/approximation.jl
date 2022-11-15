@@ -5,7 +5,6 @@ function approximate(
     δ::Real = 0.0,
     method::Symbol = :echelon,
     type::Symbol = :interior,
-    initial::Union{Nothing,Symbol} = nothing,
     knots::Union{Nothing,Vector{Float64},Vector{Tuple{Float64,Symbol}}} = nothing,
 )
     methods = [:convex, :SOS1, :SOS2, :binary, :echelon]
@@ -14,56 +13,28 @@ function approximate(
         error("Invalid method.")
     end
 
-    if type != nothing && type ∉ [:lower, :upper, :interior, :tangent_cuts]
+    if type !== nothing && type ∉ [:lower, :upper, :interior, :tangent_cuts]
         error("Invalid approximation bound type.")
-    elseif type ∈ [:lower, :upper] &&
-           typeof(knots) != Vector{Tuple{Float64,Symbol}} &&
-           initial ∉ [:convex, :concave]
-        error("Must specify initial curvature if type is :lower or :upper.")
-    elseif initial != nothing && typeof(knots) == Vector{Tuple{Float64,Symbol}}
-        @warn("'initial' will be ignored, since curvature is provided within 'knots'")
-    elseif δ != 0.0 && n != 0
-        error("You cannot set both n and δ")
     end
-
-    model = get_model(x)
-
-    fx = @variable(model)
 
     lx, ux = find_bounds(x)
-
-    if knots != nothing
-        knots = copy(knots)
-    end
-
+    model = get_model(x)
+    fx = @variable(model)
     x_type, x_values = get_type(x)
     method2 = :continuous
-    if x_type == :binary || x_type == :integer
+
+    if x_type == :binary || x_type == :integer || x_type == :discrete
         method2 = :discrete
         if x_values == nothing
             x_values = collect(ceil(lx - 0.01):floor(ux + 0.01))
         end
         knots = [float(i) for i in x_values]
         knots_shape = [:linear for i in x_values]
-    elseif typeof(knots) == Vector{Tuple{Float64,Symbol}}
-        if knots[1][1] > lx
-            if knots[1][2] == :convex
-                insert!(knots, 1, (lx, :convex))
-            elseif knots[1][2] == :concave
-                insert!(knots, 1, (lx, :concave))
-            elseif knots[1][2] == :linear
-                insert!(knots, 1, (lx, :linear))
-            else
-                error("Poorly defined function shape.")
-            end
-        end
-        knots, knots_shape = process_knots(knots, lx, ux)
-    elseif typeof(knots) == Vector{Float64}
-        knots, knots_shape = process_knots(knots, lx, ux, initial)
     else
-        knots = [lx, ux]
-        knots_shape = [initial, initial]
+        knots = infer_curvature(func, knots, lx, ux)
+        knots, knots_shape = process_knots(knots, lx, ux)
     end
+
     xi, fxi = find_points(lx, ux, func, n, δ, knots, knots_shape, type)
     n = length(xi) - 1
     set_lower_bound(fx, minimum(fxi))

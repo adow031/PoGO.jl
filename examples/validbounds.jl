@@ -7,19 +7,17 @@ function globaloptimal(n::Int, type::Symbol)
 
     fx = approximate(
         x,
-        a -> [a^3 - 3a^2 + a + 6, 3a^2 - 6a + 1],
+        a -> a^3 - 3a^2 + a + 6,
         n,
         type = type,
-        initial = :concave,
         knots = [1.0],
     )
 
     fy = approximate(
         y,
-        a -> [sin(a) + 2, cos(a)],
+        a -> sin(a) + 2,
         n,
         type = type,
-        initial = :concave,
         knots = [float(π)],
     )
 

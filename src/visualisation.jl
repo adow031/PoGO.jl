@@ -1,7 +1,7 @@
 function setup_parametric_model(
     optimizer,
     func::Function,
-    knots::Union{Vector{Tuple{Float64,Symbol}}},
+    knots::Union{Vector{Float64},Vector{Tuple{Float64,Symbol}}},
     lb::Real,
     ub::Real,
     δ::Real,
@@ -25,7 +25,7 @@ function plot_approximation(
     δ::Real,
     type::Symbol;
     detail::Int = 3,
-    knots::Union{Nothing,Vector{Tuple{Float64,Symbol}}} = nothing,
+    knots::Union{Nothing,Vector{Float64},Vector{Tuple{Float64,Symbol}}} = nothing,
 )
     knots2 = nothing
     if typeof(knots) == nothing

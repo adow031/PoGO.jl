@@ -1,4 +1,4 @@
-using JuMP, PoGO
+using JuMP, PoGO, ForwardDiff
 
 # Uncomment appropriate solver
 
@@ -32,7 +32,7 @@ function cubic_plot(; δ = 2, type = :interior)
         δ,
         type,
         detail = 40,
-        knots = [(-1.0, :concave), (1.0, :convex)],
+        knots = [1.0],
     )
 end
 
@@ -58,7 +58,7 @@ function waves(; δ = 0.1, type = :interior, wave = :sine)
                 return 0
             end
         end
-        knots = [(i, :linear) for i in -4.0:4.0]
+        knots = [i for i in -4.0:4.0]
     elseif wave == :saw
         wave_fn = function (x)
             if abs(x % 1) == 0
@@ -67,10 +67,10 @@ function waves(; δ = 0.1, type = :interior, wave = :sine)
                 return x - floor(x)
             end
         end
-        knots = [(i, :linear) for i in -4.0:4.0]
+        knots = [i for i in -4.0:4.0]
     elseif wave == :sine
         wave_fn = x -> sin(x)
-        knots = [(float(-π), :convex), (0.0, :concave), (float(π), :convex)]
+        knots = [float(-π), 0.0, float(π)]
     elseif wave == :other
         wave_fn = function (x)
             if abs(x % 2) == 1
@@ -85,28 +85,7 @@ function waves(; δ = 0.1, type = :interior, wave = :sine)
                 return 0
             end
         end
-        knots = [(i, :linear) for i in -4.0:4.0]
-    elseif wave == :test
-        wave_fn = function (x)
-            if x < 1
-                return sqrt(abs(x) + 0.1)
-            elseif x == 1
-                return [sqrt(abs(x) + 0.1), x - 1]
-            elseif x < 2
-                return x - 1
-            elseif x == 2
-                return [x - 1, 0.25 * x^2 + 1]
-            else
-                return 0.25 * x^2 + 1
-            end
-        end
-        knots = [
-            (-4.0, :concave),
-            (-0.01, :linear),
-            (0.01, :concave),
-            (1.0, :linear),
-            (2.0, :convex),
-        ]
+        knots = [i for i in -4.0:4.0]
     end
 
     return plot_approximation(
@@ -128,7 +107,6 @@ waves(δ = 0.8, type = :tangent_cuts, wave = :sine)
 waves(δ = 0.8, type = :interior, wave = :sine)
 waves(δ = 0.2, type = :tangent_cuts, wave = :sine)
 waves(δ = 0.2, type = :interior, wave = :sine)
-waves(δ = 0.8, type = :tangent_cuts, wave = :test)
 
 function general_fn(; δ = 0.1, type = :interior)
     fn = function (x)
@@ -151,7 +129,31 @@ function general_fn(; δ = 0.1, type = :interior)
         (1.0, :linear),
         (2.0, :convex),
     ]
+    return plot_approximation(optimizer, fn, -1.0, 3.0, δ, type, detail = 30, knots = knots)
+end
 
+function general_fn(; δ = 0.1, type = :interior)
+    fn = function (x)
+        if typeof(x)<:ForwardDiff.Dual && x==0
+            [-sqrt(abs(x) + 0.1),sqrt(abs(x) + 0.1)]
+        elseif x < 1
+            return sqrt(abs(x) + 0.1)
+        elseif x == 1
+            return [sqrt(abs(x) + 0.1), x - 1]
+        elseif x < 2
+            return x - 1
+        elseif x == 2
+            return [x - 1, 0.25 * x^2 + 1]
+        else
+            return 0.25 * x^2 + 1
+        end
+    end
+    knots = [
+        (-1.0, :concave),
+        (0.0, :concave),
+        (1.0, :linear),
+        (2.0, :convex),
+    ]
     return plot_approximation(optimizer, fn, -1.0, 3.0, δ, type, detail = 30, knots = knots)
 end
 

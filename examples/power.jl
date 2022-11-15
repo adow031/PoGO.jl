@@ -6,7 +6,7 @@ function power_test(n::Int, type::Symbol)
     @variable(model, 0.1 <= y <= 3)
     @constraint(model, x + y == 4)
 
-    @objective(model, Max, PoGO.power(x, y, n; type = type))
+    @objective(model, Max, power(x, y, n; type = type))
     optimize!(model)
 
     println("x: $(value(x))")

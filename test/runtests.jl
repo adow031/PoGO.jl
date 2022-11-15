@@ -148,6 +148,23 @@ function in_sets(cx::Real, cy::Real)
     return [value(x), value(y)]
 end
 
+function negative_power(rhs::Real)
+    model = Model(GLPK.Optimizer)
+
+    x = @variable(model, -5 <= x <= -1)
+    y = @variable(model, -3 <= y <= 5, Int)
+
+    z = power(x, y, 10)
+
+    @constraint(model,z==rhs)
+
+    @objective(model,Min,x)
+
+    optimize!(model)
+
+    return [value(model[:x]), value(model[:y]), value(z)]
+end
+
 result = nonlinear(10, :binary)
 approximate_cubic(10, :upper)
 @testset "PoGO.jl" begin
@@ -192,4 +209,13 @@ approximate_cubic(10, :upper)
     @test isapprox(in_sets(1, 4), [2.0, 3.0]; atol = 1e-4)
     @test isapprox(in_sets(4, 1), [3.0, 2.0]; atol = 1e-4)
     @test isapprox(in_sets(4, 4), [3.0, 3.0]; atol = 1e-4)
+
+    result = negative_power(-8)
+    @test sum(abs.(result - [-1.8934, 3.0, -8.0])) ≈ 0.0 atol = 1e-2
+    result = negative_power(-0.25)
+    @test sum(abs.(result - [-4.8408, -1.0, -0.25])) ≈ 0.0 atol = 1e-2
+    result = negative_power(16)
+    @test sum(abs.(result - [-3.8275, 2.0, 16.0])) ≈ 0.0 atol = 1e-2
+    result = negative_power(4)
+    @test sum(abs.(result - [-1.8810, 2.0, 4.0])) ≈ 0.0 atol = 1e-2
 end
