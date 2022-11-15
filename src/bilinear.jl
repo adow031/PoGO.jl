@@ -69,7 +69,7 @@ function bilinear(
             y_values = collect(ly:uy)
         end
 
-        if (x_type ∈ [:integer,:discrete] || y_type ∈ [:integer,:discrete])
+        if (x_type ∈ [:integer, :discrete] || y_type ∈ [:integer, :discrete])
             xy = @variable(model)
 
             mx = max(
@@ -90,12 +90,12 @@ function bilinear(
 
             ϵ = Dict()
 
-            if x_type ∈ [:integer,:discrete] &&
-               (y_type ∉ [:integer,:discrete] || length(y_values) >= length(x_values))
+            if x_type ∈ [:integer, :discrete] &&
+               (y_type ∉ [:integer, :discrete] || length(y_values) >= length(x_values))
                 if length(x_values) >= 50
-                   @warn(
-                       "The number of discrete levels being modelled ($(length(x_values))) within the bilinear function is large, consider using an approximation"
-                   )
+                    @warn(
+                        "The number of discrete levels being modelled ($(length(x_values))) within the bilinear function is large, consider using an approximation"
+                    )
                 end
                 ϵ[0] = 0.0
                 ϵ[length(x_values)] = 1.0
@@ -125,9 +125,9 @@ function bilinear(
                 return xy
             else
                 if length(y_values) >= 50
-                   @warn(
-                       "The number of discrete levels being modelled ($(length(y_values))) within the bilinear function is large, consider using an approximation"
-                   )
+                    @warn(
+                        "The number of discrete levels being modelled ($(length(y_values))) within the bilinear function is large, consider using an approximation"
+                    )
                 end
                 ϵ[0] = 0.0
                 ϵ[length(y_values)] = 1.0
@@ -217,7 +217,7 @@ function power(
         error("Invalid method.")
     end
 
-    lx, ux = find_bounds(x,ignore_errors=true)
+    lx, ux = find_bounds(x, ignore_errors = true)
 
     if lx >= 1e-6
         z = approximate(x, a -> log(a), n, type = type, method = method)
@@ -226,14 +226,14 @@ function power(
         return v
     elseif ux <= -1e-6
         y_type, y_values = get_type(y)
-        if y_type ∈ [:binary,:integer]
+        if y_type ∈ [:binary, :integer]
             z = approximate(x, a -> log(-a), n, type = type, method = method)
             w = bilinear(y, z, n, method = method, type = type)
             v = approximate(w, a -> exp(a), n, type = type, method = method)
-            u = approximate(y, a -> (-1)^round(Int,a))
+            u = approximate(y, a -> (-1)^round(Int, a))
             set_integer(u)
-            set_lower_bound(u,-1.0)
-            set_upper_bound(u,1.0)
+            set_lower_bound(u, -1.0)
+            set_upper_bound(u, 1.0)
             p = bilinear(u, v, n, method = method, type = type)
             return p
         else

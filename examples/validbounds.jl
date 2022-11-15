@@ -5,21 +5,9 @@ function globaloptimal(n::Int, type::Symbol)
     @variable(model, -1 <= x <= 2.5)
     @variable(model, 0 <= y <= 2π)
 
-    fx = approximate(
-        x,
-        a -> a^3 - 3a^2 + a + 6,
-        n,
-        type = type,
-        knots = [1.0],
-    )
+    fx = approximate(x, a -> a^3 - 3a^2 + a + 6, n, type = type, knots = [1.0])
 
-    fy = approximate(
-        y,
-        a -> sin(a) + 2,
-        n,
-        type = type,
-        knots = [float(π)],
-    )
+    fy = approximate(y, a -> sin(a) + 2, n, type = type, knots = [float(π)])
 
     @objective(model, Max, bilinear(fx, fy, n, type = type))
     optimize!(model)

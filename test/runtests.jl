@@ -156,9 +156,9 @@ function negative_power(rhs::Real)
 
     z = power(x, y, 10)
 
-    @constraint(model,z==rhs)
+    @constraint(model, z == rhs)
 
-    @objective(model,Min,x)
+    @objective(model, Min, x)
 
     optimize!(model)
 

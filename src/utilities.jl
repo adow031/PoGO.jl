@@ -254,30 +254,35 @@ function process_knots(
         prev_shape = knots[i][2]
         deleteat!(knots, i)
     end
-    i=length(knots)
+    i = length(knots)
     while knots[i][1] > ux
         deleteat!(knots, i)
         i -= 1
     end
     knots_shape = [knots[i][2] for i in 1:length(knots)]
     knots = [knots[i][1] for i in 1:length(knots)]
-    if knots[1]>lx
+    if knots[1] > lx
         insert!(knots, 1, lx)
         insert!(knots_shape, 1, prev_shape)
     end
-    if knots[end]<ux
+    if knots[end] < ux
         push!(knots, ux)
         push!(knots_shape, knots_shape[end])
     end
     return knots, knots_shape
 end
 
-function infer_curvature(f::Function,knots::Union{Nothing,Vector{Float64},Vector{Tuple{Float64,Symbol}}},lx::Real,ux::Real)
-    function get_curve(f::Function,m::Real)
+function infer_curvature(
+    f::Function,
+    knots::Union{Nothing,Vector{Float64},Vector{Tuple{Float64,Symbol}}},
+    lx::Real,
+    ux::Real,
+)
+    function get_curve(f::Function, m::Real)
         curvature = ForwardDiff.derivative(x -> ForwardDiff.derivative(f, x), m)
-        if curvature>0
+        if curvature > 0
             return :convex
-        elseif curvature==0
+        elseif curvature == 0
             return :linear
         else
             return :concave
@@ -286,41 +291,41 @@ function infer_curvature(f::Function,knots::Union{Nothing,Vector{Float64},Vector
 
     c = Symbol[]
 
-    if knots===nothing
-        knots=[float(lx),float(ux)]
+    if knots === nothing
+        knots = [float(lx), float(ux)]
     end
 
-    if typeof(knots)==Vector{Float64}
-        if lx<knots[1]
-            insert!(knots,1,lx)
+    if typeof(knots) == Vector{Float64}
+        if lx < knots[1]
+            insert!(knots, 1, lx)
         end
-        if ux>knots[end]
-            push!(knots,ux)
+        if ux > knots[end]
+            push!(knots, ux)
         end
         for i in 1:length(knots)
-            if i==length(knots)
+            if i == length(knots)
                 m = knots[i] + 1e-5
             else
-                m=(knots[i]+knots[i+1])/2
+                m = (knots[i] + knots[i+1]) / 2
             end
-            push!(c,get_curve(f,m))
+            push!(c, get_curve(f, m))
         end
-        return [(knots[i],c[i]) for i in 1:length(knots)]
+        return [(knots[i], c[i]) for i in 1:length(knots)]
     end
 
     knots = copy(knots)
 
-    if lx<knots[1][1]
-        m = (lx+knots[1][1])/2
-        insert!(knots,1,(lx,get_curve(f,m)))
+    if lx < knots[1][1]
+        m = (lx + knots[1][1]) / 2
+        insert!(knots, 1, (lx, get_curve(f, m)))
     end
-    if ux>knots[end][1]
-        m = ux+1e-5
-        push!(knots,(ux,get_curve(f,m)))
+    if ux > knots[end][1]
+        m = ux + 1e-5
+        push!(knots, (ux, get_curve(f, m)))
     end
 end
 
-a=[:a,:b]
-b=[1.0,2.0]
+a = [:a, :b]
+b = [1.0, 2.0]
 
-[(a[i],b[i]) for i in 1:2]
+[(a[i], b[i]) for i in 1:2]
