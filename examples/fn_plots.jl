@@ -110,30 +110,6 @@ waves(δ = 0.2, type = :interior, wave = :sine)
 
 function general_fn(; δ = 0.1, type = :interior)
     fn = function (x)
-        if x < 1
-            return sqrt(abs(x) + 0.1)
-        elseif x == 1
-            return [sqrt(abs(x) + 0.1), x - 1]
-        elseif x < 2
-            return x - 1
-        elseif x == 2
-            return [x - 1, 0.25 * x^2 + 1]
-        else
-            return 0.25 * x^2 + 1
-        end
-    end
-    knots = [
-        (-1.0, :concave),
-        (-0.01, :linear),
-        (0.01, :concave),
-        (1.0, :linear),
-        (2.0, :convex),
-    ]
-    return plot_approximation(optimizer, fn, -1.0, 3.0, δ, type, detail = 30, knots = knots)
-end
-
-function general_fn(; δ = 0.1, type = :interior)
-    fn = function (x)
         if typeof(x) <: ForwardDiff.Dual && x == 0
             [-sqrt(abs(x) + 0.1), sqrt(abs(x) + 0.1)]
         elseif x < 1
@@ -148,7 +124,7 @@ function general_fn(; δ = 0.1, type = :interior)
             return 0.25 * x^2 + 1
         end
     end
-    knots = [(-1.0, :concave), (0.0, :concave), (1.0, :linear), (2.0, :convex)]
+    knots = [0.0, 1.0, 2.0]
     return plot_approximation(optimizer, fn, -1.0, 3.0, δ, type, detail = 30, knots = knots)
 end
 
