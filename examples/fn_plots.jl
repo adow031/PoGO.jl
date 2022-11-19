@@ -40,6 +40,7 @@ cubic_plot(δ = 0.5, type = :interior)
 cubic_plot(δ = 0.5, type = :tangent_cuts)
 cubic_plot(δ = 0.5, type = :lower)
 cubic_plot(δ = 0.5, type = :upper)
+cubic_plot(δ = 0.5, type = :combined)
 
 function waves(; δ = 0.1, type = :interior, wave = :sine)
     knots = nothing
@@ -128,7 +129,32 @@ function general_fn(; δ = 0.1, type = :interior)
     return plot_approximation(optimizer, fn, -1.0, 3.0, δ, type, detail = 30, knots = knots)
 end
 
-general_fn(δ = 0.5, type = :interior)
+general_fn(δ = 0.5, type = :combined)
 general_fn(δ = 0.5, type = :lower)
 general_fn(δ = 0.5, type = :upper)
 general_fn(δ = 0.5, type = :tangent_cuts)
+
+plot_approximation(
+    optimizer,
+    x -> sin(x),
+    -π,
+    π,
+    0.2,
+    :combined,
+    detail = 30,
+    knots = [-π / 2, 0.0, π / 2],
+    #knots=[π*i/2 for i in -1:1]
+)
+
+plot_approximation(
+    optimizer,
+    x -> x^2,
+    -10,
+    10,
+    1,
+    :combined,
+    detail = 100,
+    #knots = nothing,
+    knots = [0.0],
+    #knots=[π*i/2 for i in -1:1]
+)

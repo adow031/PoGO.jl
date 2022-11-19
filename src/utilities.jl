@@ -138,12 +138,9 @@ function find_points(
     n::Integer,
     δ::Real,
     knots::Vector{Float64},
-    knots_shape::Union{Vector{Nothing},Vector{Symbol}},
+    knots_shape::Vector{Symbol},
     type::Symbol,
 )
-    f = 0.0
-    g = 0.0
-
     xi = Float64[]
     fxi = Float64[]
 
@@ -168,7 +165,7 @@ function find_points(
         end
         if (shape == :concave && type == :upper) ||
            (shape == :convex && type == :lower) ||
-           (shape != :linear && type == :tangent_cuts)
+           (shape != :linear && type ∈ [:tangent_cuts, :combined])
             for i in 1:n-1
                 xold = x
                 if length(f) == 2
@@ -181,6 +178,7 @@ function find_points(
                 else
                     gold = g
                 end
+
                 x = knots[j] + i * (knots[j+1] - knots[j]) / (n - 1)
 
                 f = func(x)
@@ -204,6 +202,11 @@ function find_points(
                 end
                 push!(xi, xreal)
                 push!(fxi, freal)
+            end
+            if type == :combined
+                for i in 0:n-2
+                    fxi[end-i] = (fxi[end-i] * 0.5 + 0.5 * func(xi[end-i]))
+                end
             end
         elseif (shape == :concave && type == :lower) ||
                (shape == :convex && type == :upper) ||
@@ -324,8 +327,3 @@ function infer_curvature(
         push!(knots, (ux, get_curve(f, m)))
     end
 end
-
-a = [:a, :b]
-b = [1.0, 2.0]
-
-[(a[i], b[i]) for i in 1:2]

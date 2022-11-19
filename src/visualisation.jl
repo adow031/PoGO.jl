@@ -1,7 +1,7 @@
 function setup_parametric_model(
     optimizer,
     func::Function,
-    knots::Union{Vector{Float64},Vector{Tuple{Float64,Symbol}}},
+    knots::Union{Nothing,Vector{Float64},Vector{Tuple{Float64,Symbol}}},
     lb::Real,
     ub::Real,
     δ::Real,
@@ -28,7 +28,7 @@ function plot_approximation(
     knots::Union{Nothing,Vector{Float64},Vector{Tuple{Float64,Symbol}}} = nothing,
 )
     knots2 = nothing
-    if typeof(knots) == nothing
+    if typeof(knots) === Nothing
         knots2 = Float64[]
     elseif typeof(knots) == Vector{Float64}
         knots2 = copy(knots)

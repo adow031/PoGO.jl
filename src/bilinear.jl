@@ -163,7 +163,7 @@ function bilinear(
         error("n must be at least 2.")
     end
 
-    if type == :interior || type == :tangent_cuts
+    if type ∈ [:interior, :tangent_cuts, :combined]
         type2 = type
     elseif type == :lower
         type = :tangent_cuts
@@ -185,7 +185,8 @@ function bilinear(
     a² = approximate(
         ((x - (lx + ux) / 2) / (ux - lx) + (y - (ly + uy) / 2) / (uy - ly)) / 2,
         x -> x^2,
-        2 * n,
+        n,
+        knots = [0.0],
         method = method,
         type = type,
     )
@@ -193,7 +194,8 @@ function bilinear(
     b² = approximate(
         ((x - (lx + ux) / 2) / (ux - lx) - (y - (ly + uy) / 2) / (uy - ly)) / 2,
         x -> x^2,
-        2 * n,
+        n,
+        knots = [0.0],
         method = method,
         type = type2,
     )
@@ -237,9 +239,9 @@ function power(
             p = bilinear(u, v, n, method = method, type = type)
             return p
         else
-            error("A negative number must have an integer or discrete exponent.")
+            error("A negative variable must have an integer or discrete exponent.")
         end
     else
-        error("Currently PoGO.jl cannot model exponents of near-zero numbers.")
+        error("PoGO.jl cannot model exponents of near-zero numbers.")
     end
 end

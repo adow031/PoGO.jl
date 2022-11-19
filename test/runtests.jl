@@ -165,8 +165,6 @@ function negative_power(rhs::Real)
     return [value(model[:x]), value(model[:y]), value(z)]
 end
 
-result = nonlinear(10, :binary)
-approximate_cubic(10, :upper)
 @testset "PoGO.jl" begin
     result = nonlinear(10, :binary)
     @test sum(abs.(result - [1.6, 4.0, 0.37866])) ≈ 0.0 atol = 1e-4

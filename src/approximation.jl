@@ -13,7 +13,7 @@ function approximate(
         error("Invalid method.")
     end
 
-    if type !== nothing && type ∉ [:lower, :upper, :interior, :tangent_cuts]
+    if type !== nothing && type ∉ [:lower, :upper, :interior, :tangent_cuts, :combined]
         error("Invalid approximation bound type.")
     end
 
@@ -63,6 +63,7 @@ function approximate(
             set_lower_bound(α[i], 0)
             set_upper_bound(α[i], 1)
         end
+
         if method == :echelon
             ϵ = Dict()
             for i in 0:n-1
@@ -76,9 +77,10 @@ function approximate(
             end
 
             @constraint(model, α[0] <= ϵ[0])
-            @constraint(model, α[1] <= ϵ[1])
-            @constraint(model, α[n] <= 1 - ϵ[n-2])
-
+            if n > 1
+                @constraint(model, α[1] <= ϵ[1])
+                @constraint(model, α[n] <= 1 - ϵ[n-2])
+            end
         elseif method == :binary || method == :SOS1
             z = Dict()
 
@@ -104,29 +106,6 @@ function approximate(
             @constraint(model, α[n] <= z[n-1])
         elseif method == :SOS2
             @constraint(model, [α[i] for i in 0:n] in SOS2())
-        elseif method == :discrete
-            z = Dict()
-
-            if method == :binary
-                for i in 0:n-1
-                    z[i] = @variable(model, binary = true)
-                end
-            else
-                for i in 0:n-1
-                    z[i] = @variable(model)
-                    set_lower_bound(z[i], 0)
-                end
-                @constraint(model, [z[i] for i in 0:n-1] in SOS1())
-            end
-
-            @constraint(model, sum(z[i] for i in 0:n-1) == 1)
-
-            for i in 1:n-1
-                @constraint(model, α[i] <= z[i-1] + z[i])
-            end
-
-            @constraint(model, α[0] <= z[0])
-            @constraint(model, α[n] <= z[n-1])
         end
     end
     return fx
