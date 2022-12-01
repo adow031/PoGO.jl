@@ -123,18 +123,25 @@ function approximate_cubic_discrete(obj, lb, ub)
 end
 
 function in_sets(cx::Real, cy::Real)
-    sets = [
-        [(0.0, 0.0), (1.0, 0.0), (1.0, 1.0), (0.0, 1.0)],
-        [(2.0, 2.0), (3.0, 2.0), (3.0, 3.0), (2.0, 3.0)],
+    points = [
+        (0.0, 0.0),
+        (1.0, 0.0),
+        (1.0, 1.0),
+        (0.0, 1.0),
+        (2.0, 2.0),
+        (3.0, 2.0),
+        (3.0, 3.0),
+        (2.0, 3.0),
     ]
 
+    sets = [1, 1, 1, 1, 2, 2, 2, 2]
     model = JuMP.Model(GLPK.Optimizer)
 
     @variable(model, x)
     @variable(model, y)
     @variable(model, d)
 
-    z = xy_in_sets(x, y, sets, update_bounds = true)
+    interpolate([x, y], points, sets, update_bounds = true)
 
     @constraint(
         model,
@@ -146,6 +153,117 @@ function in_sets(cx::Real, cy::Real)
     optimize!(model)
 
     return [value(x), value(y)]
+end
+
+function interp(X, Y)
+    model = JuMP.Model(GLPK.Optimizer)
+
+    @variable(model, x)
+    @variable(model, y)
+    @variable(model, z)
+
+    PoGO.interpolate(
+        [x, y, z],
+        [(0, 0, 3), (0, 2, 4), (1, 1, 5), (2, 0, 6), (2, 2, 7)],
+        [0, 0, [0, 1], 1, 1],
+    )
+
+    @constraint(model, x == X)
+    @constraint(model, y == Y)
+    @objective(model, Min, z)
+
+    optimize!(model)
+    return value(z)
+end
+
+function interp_fn(X, Y)
+    model = JuMP.Model(GLPK.Optimizer)
+    @variable(model, x)
+    @variable(model, y)
+
+    z = PoGO.interpolate_fn((x, y) -> sqrt(x) * sin(y), [x, y], [1:0.1:3, 1:0.1:3])
+    @objective(model, Min, z)
+
+    @constraint(model, x == X)
+    @constraint(model, y == Y)
+
+    optimize!(model)
+    return value(z)
+end
+
+function interp_fn_pts(X, Y)
+    points = [
+        0.1345547259221871 0.6674206709045125
+        0.5785505908199026 0.5799491307751639
+        0.6937923537615268 0.00041410756224624645
+        0.5546120304490526 0.444346423889622
+        0.9736473421517288 0.36056976267756746
+        0.3619967054023656 0.4045676376116868
+        0.6859856822126517 0.5307393395868238
+        0.693778523223462 0.12042346184441766
+        0.5668391239777307 0.2965015701072703
+        0.4549256807005051 0.28118851814924295
+        0.521495486631126 0.38234635199801137
+        0.40803859883694327 0.00038724533209688605
+        0.7302285907371966 0.34618641979564346
+        0.8789394232667177 0.5166243597119882
+        0.19098457328317175 0.03307732223905446
+        0.4488428264808636 0.2776225273989721
+        0.6495747197271683 0.4629169708005898
+        0.4486429598022251 0.8448075421920468
+        0.4928407997818922 0.6830491066528377
+        0.1520047909926191 0.9313189680471927
+    ]
+
+    model = JuMP.Model(GLPK.Optimizer)
+    @variable(model, x)
+    @variable(model, y)
+
+    z = PoGO.interpolate_fn((x, y) -> [x * y, x^2 * y], [x, y], points)
+    @objective(model, Min, z[1] + z[2])
+
+    @constraint(model, x == X)
+    @constraint(model, y == Y)
+
+    optimize!(model)
+    return objective_value(model)
+end
+
+function interp_pts(X, Y)
+    points = [
+        0.1345547259221871 0.6674206709045125 0.101888239521013
+        0.5785505908199026 0.5799491307751639 0.5296509412286065
+        0.6937923537615268 0.00041410756224624645 0.00048663443685222204
+        0.5546120304490526 0.444346423889622 0.3831183903783676
+        0.9736473421517288 0.36056976267756746 0.6928840128024092
+        0.3619967054023656 0.4045676376116868 0.19946734842481678
+        0.6859856822126517 0.5307393395868238 0.6138329724587234
+        0.693778523223462 0.12042346184441766 0.14151047254757548
+        0.5668391239777307 0.2965015701072703 0.2633365994113446
+        0.4549256807005051 0.28118851814924295 0.1861139156095003
+        0.521495486631126 0.38234635199801137 0.30337387119935894
+        0.40803859883694327 0.00038724533209688605 0.00022248564718513688
+        0.7302285907371966 0.34618641979564346 0.4373935197713632
+        0.8789394232667177 0.5166243597119882 0.8531916632373886
+        0.19098457328317175 0.03307732223905446 0.007523757148797848
+        0.4488428264808636 0.2776225273989721 0.1805386817480868
+        0.6495747197271683 0.4629169708005898 0.4960257351603552
+        0.4486429598022251 0.8448075421920468 0.5490602452336192
+        0.4928407997818922 0.6830491066528377 0.5025416684628153
+        0.1520047909926191 0.9313189680471927 0.1630834949750745
+    ]
+    model = JuMP.Model(GLPK.Optimizer)
+    @variable(model, x)
+    @variable(model, y)
+
+    z = PoGO.interpolate_points([x, y], points)
+    @objective(model, Min, z)
+
+    @constraint(model, x == X)
+    @constraint(model, y == Y)
+
+    optimize!(model)
+    return objective_value(model)
 end
 
 function negative_power(rhs::Real)
@@ -207,6 +325,22 @@ end
     @test isapprox(in_sets(1, 4), [2.0, 3.0]; atol = 1e-4)
     @test isapprox(in_sets(4, 1), [3.0, 2.0]; atol = 1e-4)
     @test isapprox(in_sets(4, 4), [3.0, 3.0]; atol = 1e-4)
+
+    @test interp(1, 1) ≈ 5.0 atol = 1e-4
+    @test interp(1.5, 1.5) ≈ 6.0 atol = 1e-4
+    @test interp(1.75, 1.75) ≈ 6.5 atol = 1e-4
+    @test interp(2, 2) ≈ 7.0 atol = 1e-4
+    @test interp(1.5, 0.5) ≈ 5.5 atol = 1e-4
+
+    @test interp_fn(1.25, 2.25) ≈ 0.868 atol = 1e-3
+    @test interp_fn(1, 2.25) ≈ 0.777 atol = 1e-3
+    @test interp_fn(2.42, 1.21) ≈ 1.455 atol = 1e-3
+
+    @test interp_fn_pts(0.5, 0.5) ≈ 0.394 atol = 1e-3
+    @test interp_fn_pts(0.4, 0.4) ≈ 0.225 atol = 1e-3
+
+    @test interp_pts(0.5, 0.5) ≈ 0.394 atol = 1e-3
+    @test interp_pts(0.4, 0.4) ≈ 0.225 atol = 1e-3
 
     result = negative_power(-8)
     @test sum(abs.(result - [-1.8934, 3.0, -8.0])) ≈ 0.0 atol = 1e-2

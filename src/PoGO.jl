@@ -1,6 +1,6 @@
 module PoGO
 
-using JuMP, Plots, ForwardDiff
+using JuMP, Plots, ForwardDiff, Delaunay
 
 import Base: ==
 
@@ -10,7 +10,14 @@ include("utilities.jl")
 include("approximation.jl")
 include("bilinear.jl")
 include("2dsets.jl")
+include("interpolation.jl")
 include("visualisation.jl")
 
-export bilinear, approximate, power, plot_approximation, xy_in_sets
+export bilinear,
+    approximate,
+    power,
+    plot_approximation,
+    interpolate,
+    interpolate_fn,
+    interpolate_points
 end

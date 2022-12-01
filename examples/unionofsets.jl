@@ -7,16 +7,24 @@ optimizer =
     optimizer_with_attributes(() -> Gurobi.Optimizer(), "OutputFlag" => 1, "MIPGap" => 0.0)
 
 function in_sets(cx::Real, cy::Real)
-    sets = [
-        [(0.0, 0.0), (1.0, 0.0), (1.0, 1.0), (0.0, 1.0)],
-        [(2.0, 2.0), (3.0, 2.0), (3.0, 3.0), (2.0, 3.0)],
+    points = [
+        (0.0, 0.0),
+        (1.0, 0.0),
+        (1.0, 1.0),
+        (0.0, 1.0),
+        (2.0, 2.0),
+        (3.0, 2.0),
+        (3.0, 3.0),
+        (2.0, 3.0),
     ]
+
+    sets = [1, 1, 1, 1, 2, 2, 2, 2]
 
     model = JuMP.Model(optimizer)
     @variable(model, x)
     @variable(model, y)
 
-    z = xy_in_sets(x, y, sets, update_bounds = true)
+    interpolate([x, y], points, sets, update_bounds = true)
 
     @objective(model, Min, cx * x + cy * y)
 
@@ -33,10 +41,18 @@ in_sets(2, -1) == (0.0, 1.0)
 in_sets(-1, 2) == (1.0, 0.0)
 
 function in_sets2(cx::Real, cy::Real)
-    sets = [
-        [(0.0, 0.0), (1.0, 0.0), (1.0, 1.0), (0.0, 1.0)],
-        [(2.0, 2.0), (3.0, 2.0), (3.0, 3.0), (2.0, 3.0)],
+    points = [
+        (0.0, 0.0),
+        (1.0, 0.0),
+        (1.0, 1.0),
+        (0.0, 1.0),
+        (2.0, 2.0),
+        (3.0, 2.0),
+        (3.0, 3.0),
+        (2.0, 3.0),
     ]
+
+    sets = [1, 1, 1, 1, 2, 2, 2, 2]
 
     model = JuMP.Model(optimizer)
 
@@ -44,7 +60,7 @@ function in_sets2(cx::Real, cy::Real)
     @variable(model, y)
     @variable(model, d)
 
-    z = xy_in_sets(x, y, sets, update_bounds = true)
+    interpolate([x, y], points, sets, update_bounds = true)
 
     @constraint(
         model,
@@ -76,8 +92,9 @@ function dynamic_set()
     @variable(model, y)
     @variable(model, 0 <= z <= 1)
 
-    sets = [[(0.0, z), (0.0, 1.0), (0.5, 1.0), (z, 0.4)]]
-    xy_in_sets(x, y, sets, 10, update_bounds = true)
+    points = [(0.0, z), (0.0, 1.0), (0.5, 1.0), (z, 0.4)]
+    sets = [1, 1, 1, 1]
+    interpolate([x, y], points, sets, 10, update_bounds = true)
 
     @objective(model, Min, -2 * x - 1 * y - z)
     optimize!(model)
