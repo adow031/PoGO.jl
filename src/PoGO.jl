@@ -14,10 +14,5 @@ include("interpolation.jl")
 include("visualisation.jl")
 
 export bilinear,
-    approximate,
-    power,
-    plot_approximation,
-    interpolate,
-    interpolate_fn,
-    interpolate_points
+    approximate, power, plot_approximation, interpolate, interpolate_fn, interpolate_points
 end
