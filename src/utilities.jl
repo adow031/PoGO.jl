@@ -41,7 +41,7 @@ function get_type(x::Union{VariableRef,AffExpr})
         indices = ones(Int, length(vals))
         final = Float64[]
         while true
-            temp = sum(vals[i][indices[i]] for i in 1:length(vals)) + x.constant
+            temp = sum(vals[i][indices[i]] for i in eachindex(vals)) + x.constant
             if temp ∉ final
                 push!(final, temp)
             end
@@ -262,8 +262,8 @@ function process_knots(
         deleteat!(knots, i)
         i -= 1
     end
-    knots_shape = [knots[i][2] for i in 1:length(knots)]
-    knots = [knots[i][1] for i in 1:length(knots)]
+    knots_shape = [knots[i][2] for i in eachindex(knots)]
+    knots = [knots[i][1] for i in eachindex(knots)]
     if knots[1] > lx
         insert!(knots, 1, lx)
         insert!(knots_shape, 1, prev_shape)
@@ -305,7 +305,7 @@ function infer_curvature(
         if ux > knots[end]
             push!(knots, ux)
         end
-        for i in 1:length(knots)
+        for i in eachindex(knots)
             if i == length(knots)
                 m = knots[i] + 1e-5
             else
@@ -313,7 +313,7 @@ function infer_curvature(
             end
             push!(c, get_curve(f, m))
         end
-        return [(knots[i], c[i]) for i in 1:length(knots)]
+        return [(knots[i], c[i]) for i in eachindex(knots)]
     end
 
     knots = copy(knots)

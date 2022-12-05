@@ -4,7 +4,7 @@ using JuMP, Plots, ForwardDiff, Delaunay
 
 import Base: ==
 
-(==)(x::U, y::T) where {U<:ForwardDiff.Dual,T<:Real} = x.value == y
+(==)(x::U, y::T) where {U<:ForwardDiff.Dual,T<:Int} = x.value == y
 
 include("utilities.jl")
 include("approximation.jl")

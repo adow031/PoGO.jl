@@ -5,7 +5,14 @@ function interpolate(
     n::Int = 0;
     update_bounds::Bool = false,
     method::Symbol = :binary,
+    name::String = "",
 )
+    methods = [:convex, :SOS1, :binary, :bisection]
+
+    if method ∉ methods
+        error("Invalid method.")
+    end
+
     model = get_model(x_vector[1])
 
     if update_bounds
@@ -55,50 +62,87 @@ function interpolate(
         end
     end
 
+    y = Dict()
     z = Dict()
-    alpha = Dict()
+    α = Dict()
 
     for p in eachindex(points)
         point = points[p]
-        alpha[p] = @variable(model)
-        set_name(alpha[p], "α#$(p)")
-        set_lower_bound(alpha[p], 0)
-        set_upper_bound(alpha[p], 1) #perhaps only include if corresponding point is a variable.
+        α[p] = @variable(model)
+        set_name(α[p], "α#$(p)")
+        set_lower_bound(α[p], 0)
+        set_upper_bound(α[p], 1) #perhaps only include if corresponding point is a variable.
     end
 
     if method == :binary
         for set in all_sets
             z[set] = @variable(model, binary = true)
-            set_name(z[set], "Set#$(set)")
+            set_name(z[set], "z_set#$(set)")
         end
-    elseif method == :SOS1
+    else
         for set in all_sets
             z[set] = @variable(model)
+            set_name(z[set], "z_set#$(set)")
             set_lower_bound(z[set], 0)
         end
+    end
+
+    if method == :SOS1
         @constraint(model, [z[set] for set in all_sets] in SOS1())
+    elseif method == :bisection
+        k = ceil(Int, log2(length(all_sets)))
+
+        for j in 0:k-1
+            y[j] = @variable(model, binary = true)
+            if name == ""
+                set_name(y[j], "y$(j)_[$(index(y[j]).value)]")
+            else
+                set_name(y[j], "y$(j)_$(name)")
+            end
+        end
+
+        for i in 0:length(all_sets)-1
+            total = AffExpr(1 - k)
+            for j in 0:k-1
+                if (i & 2^j) != 0
+                    @constraint(model, z[all_sets[i+1]] <= y[j])
+                    total += y[j]
+
+                else
+                    @constraint(model, z[all_sets[i+1]] <= 1 - y[j])
+                    total += 1 - y[j]
+                end
+            end
+            @constraint(model, z[all_sets[i+1]] >= total)
+        end
+        for i in length(all_sets):(2^k-1)
+            total = AffExpr(1 - k)
+            for j in 0:k-1
+                total += (i & 2^j) != 0 ? y[j] : 1 - y[j]
+            end
+            @constraint(model, 0 >= total)
+        end
     end
 
     for p in eachindex(points)
-        @constraint(model, alpha[p] <= sum(z[j] for j in sets[p]))
+        @constraint(model, α[p] <= sum(z[j] for j in sets[p]))
     end
     @constraint(model, sum(values(z)) == 1)
 
     for i in eachindex(x_vector)
         sum_p = sum(
-            alpha[p] * points[p][i] for
-            p in eachindex(points) if typeof(points[p][i]) <: Real;
+            α[p] * points[p][i] for p in eachindex(points) if typeof(points[p][i]) <: Real;
             init = 0.0,
         )
         sum_p += sum(
-            bilinear(alpha[p], points[p][i], n) for
+            bilinear(α[p], points[p][i], n) for
             p in eachindex(points) if typeof(points[p][i]) <: Union{VariableRef,AffExpr};
             init = 0.0,
         )
         @constraint(model, x_vector[i] == sum_p)
     end
 
-    @constraint(model, sum(alpha[p] for p in eachindex(points)) == 1)
+    @constraint(model, sum(α[p] for p in eachindex(points)) == 1)
 
     return z
 end

@@ -155,7 +155,7 @@ function in_sets(cx::Real, cy::Real)
     return [value(x), value(y)]
 end
 
-function interp(X, Y)
+function interp(X::Real, Y::Real)
     model = JuMP.Model(GLPK.Optimizer)
 
     @variable(model, x)
@@ -176,12 +176,17 @@ function interp(X, Y)
     return value(z)
 end
 
-function interp_fn(X, Y)
+function interp_fn(X::Real, Y::Real, method::Symbol)
     model = JuMP.Model(GLPK.Optimizer)
     @variable(model, x)
     @variable(model, y)
 
-    z = PoGO.interpolate_fn((x, y) -> sqrt(x) * sin(y), [x, y], [1:0.1:3, 1:0.1:3])
+    z = PoGO.interpolate_fn(
+        (x, y) -> sqrt(x) * sin(y),
+        [x, y],
+        [1:0.1:3, 1:0.1:3],
+        method = method,
+    )
     @objective(model, Min, z)
 
     @constraint(model, x == X)
@@ -332,9 +337,12 @@ end
     @test interp(2, 2) ≈ 7.0 atol = 1e-4
     @test interp(1.5, 0.5) ≈ 5.5 atol = 1e-4
 
-    @test interp_fn(1.25, 2.25) ≈ 0.868 atol = 1e-3
-    @test interp_fn(1, 2.25) ≈ 0.777 atol = 1e-3
-    @test interp_fn(2.42, 1.21) ≈ 1.455 atol = 1e-3
+    @test interp_fn(1.25, 2.25, :binary) ≈ 0.868 atol = 1e-3
+    @test interp_fn(1, 2.25, :binary) ≈ 0.777 atol = 1e-3
+    @test interp_fn(2.42, 1.21, :binary) ≈ 1.455 atol = 1e-3
+
+    @test interp_fn(1, 2.25, :bisection) ≈ 0.777 atol = 1e-3
+    @test interp_fn(2.42, 1.21, :bisection) ≈ 1.455 atol = 1e-3
 
     @test interp_fn_pts(0.5, 0.5) ≈ 0.394 atol = 1e-3
     @test interp_fn_pts(0.4, 0.4) ≈ 0.225 atol = 1e-3

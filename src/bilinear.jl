@@ -4,6 +4,7 @@ function bilinear(
     n::Int = 0;
     method::Symbol = :echelon,
     type::Symbol = :interior,
+    name::String = "",
 )
     if method == :convex
         error("Invalid method.")
@@ -22,6 +23,11 @@ function bilinear(
     if n == 0
         if x_type == :binary && y_type == :binary
             xy = @variable(model, binary = true) # doesn't need to be binary, but it may help with branch-and-bound.
+            if name == ""
+                set_name(xy, "xy_[$(index(xy).value)]")
+            else
+                set_name(xy, name)
+            end
             @constraint(model, xy >= x + y - 1)
             @constraint(model, xy <= x)
             @constraint(model, xy <= y)
@@ -30,6 +36,11 @@ function bilinear(
 
         if x_type == :binary
             xy = @variable(model)
+            if name == ""
+                set_name(xy, "xy_[$(index(xy).value)]")
+            else
+                set_name(xy, name)
+            end
             if ly >= 0
                 @constraint(model, xy <= y)
             else
@@ -47,6 +58,11 @@ function bilinear(
 
         if y_type == :binary
             xy = @variable(model)
+            if name == ""
+                set_name(xy, "xy_[$(index(xy).value)]")
+            else
+                set_name(xy, name)
+            end
             if lx >= 0
                 @constraint(model, xy <= x)
             else
@@ -62,16 +78,20 @@ function bilinear(
             return xy
         end
 
-        if x_values == nothing
+        if x_values === nothing
             x_values = collect(lx:ux)
         end
-        if y_values == nothing
+        if y_values === nothing
             y_values = collect(ly:uy)
         end
 
         if (x_type ∈ [:integer, :discrete] || y_type ∈ [:integer, :discrete])
             xy = @variable(model)
-
+            if name == ""
+                set_name(xy, "xy_[$(index(xy).value)]")
+            else
+                set_name(xy, name)
+            end
             mx = max(
                 maximum(y_values) * maximum(x_values),
                 minimum(y_values) * minimum(x_values),
@@ -101,6 +121,11 @@ function bilinear(
                 ϵ[length(x_values)] = 1.0
                 for i in 1:length(x_values)-1
                     ϵ[i] = @variable(model, binary = true)
+                    if name == ""
+                        set_name(ϵ[i], "ϵ$(i)_[$(index(ϵ[i]).value)]")
+                    else
+                        set_name(ϵ[i], "ϵ$(i)_$name")
+                    end
                 end
 
                 for i in 2:length(x_values)-1
@@ -108,10 +133,10 @@ function bilinear(
                 end
                 @constraint(
                     model,
-                    x == sum(x_values[i] * (ϵ[i] - ϵ[i-1]) for i in 1:length(x_values))
+                    x == sum(x_values[i] * (ϵ[i] - ϵ[i-1]) for i in eachindex(x_values))
                 )
 
-                for i in 1:length(x_values)
+                for i in eachindex(x_values)
                     @constraint(
                         model,
                         xy <= (mx - mn) * (1 - ϵ[i] + ϵ[i-1]) + x_values[i] * y
@@ -133,6 +158,11 @@ function bilinear(
                 ϵ[length(y_values)] = 1.0
                 for i in 1:length(y_values)-1
                     ϵ[i] = @variable(model, binary = true)
+                    if name == ""
+                        set_name(ϵ[i], "ϵ$(i)_[$(index(ϵ[i]).value)]")
+                    else
+                        set_name(ϵ[i], "ϵ$(i)_$name")
+                    end
                 end
 
                 for i in 2:length(y_values)-1
@@ -140,10 +170,10 @@ function bilinear(
                 end
                 @constraint(
                     model,
-                    y == sum(y_values[i] * (ϵ[i] - ϵ[i-1]) for i in 1:length(y_values))
+                    y == sum(y_values[i] * (ϵ[i] - ϵ[i-1]) for i in eachindex(y_values))
                 )
 
-                for i in 1:length(y_values)
+                for i in eachindex(y_values)
                     @constraint(
                         model,
                         xy <= (mx - mn) * (1 - ϵ[i] + ϵ[i-1]) + y_values[i] * x
@@ -175,9 +205,12 @@ function bilinear(
         error("Invalid bound type.")
     end
 
-    a² = @variable(model)
-    b² = @variable(model)
     xy = @variable(model)
+    if name == ""
+        set_name(xy, "xy_[$(index(xy).value)]")
+    else
+        set_name(xy, name)
+    end
 
     set_lower_bound(xy, min(ux * ly, lx * uy))
     set_upper_bound(xy, max(ux * uy, lx * ly))
@@ -189,6 +222,7 @@ function bilinear(
         knots = [0.0],
         method = method,
         type = type,
+        name = name,
     )
 
     b² = approximate(
@@ -198,6 +232,7 @@ function bilinear(
         knots = [0.0],
         method = method,
         type = type2,
+        name = name,
     )
     @constraint(
         model,
@@ -214,6 +249,7 @@ function power(
     n::Int;
     method::Symbol = :echelon,
     type::Symbol = :interior,
+    name::String = "",
 )
     if method == :convex
         error("Invalid method.")
@@ -236,7 +272,7 @@ function power(
             set_integer(u)
             set_lower_bound(u, -1.0)
             set_upper_bound(u, 1.0)
-            p = bilinear(u, v, n, method = method, type = type)
+            p = bilinear(u, v, n, method = method, type = type, name = name)
             return p
         else
             error("A negative variable must have an integer or discrete exponent.")
