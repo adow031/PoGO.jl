@@ -1,4 +1,4 @@
-using JuMP, PoGO, ForwardDiff
+using JuMP, PoGO, ForwardDiff, Plots
 
 # Uncomment appropriate solver
 
@@ -24,7 +24,7 @@ optimizer =
 # optimizer = optimizer_with_attributes(Cbc.Optimizer, "logLevel" => 0, "ratioGap" => 0.0)
 
 function cubic_plot(; δ = 2, type = :interior)
-    return plot_approximation(
+    x, fx, y = plot_approximation(
         optimizer,
         a -> a^3 - 3a^2 + a + 2,
         -1.0,
@@ -34,6 +34,8 @@ function cubic_plot(; δ = 2, type = :interior)
         detail = 40,
         knots = [1.0],
     )
+    plot(x, fx)
+    return plot!(x, y)
 end
 
 cubic_plot(δ = 0.5, type = :interior)
@@ -89,7 +91,7 @@ function waves(; δ = 0.1, type = :interior, wave = :sine)
         knots = [i for i in -4.0:4.0]
     end
 
-    return plot_approximation(
+    x, fx, y = plot_approximation(
         optimizer,
         wave_fn,
         -4.5,
@@ -99,6 +101,8 @@ function waves(; δ = 0.1, type = :interior, wave = :sine)
         detail = 50,
         knots = knots,
     )
+    plot(x, fx)
+    return plot!(x, y)
 end
 
 waves(δ = 1, type = :tangent_cuts, wave = :square)
@@ -126,35 +130,13 @@ function general_fn(; δ = 0.1, type = :interior)
         end
     end
     knots = [0.0, 1.0, 2.0]
-    return plot_approximation(optimizer, fn, -1.0, 3.0, δ, type, detail = 30, knots = knots)
+    x, fx, y =
+        plot_approximation(optimizer, fn, -1.0, 3.0, δ, type, detail = 30, knots = knots)
+    plot(x, fx)
+    return plot!(x, y)
 end
 
 general_fn(δ = 0.5, type = :combined)
 general_fn(δ = 0.5, type = :lower)
 general_fn(δ = 0.5, type = :upper)
 general_fn(δ = 0.5, type = :tangent_cuts)
-
-plot_approximation(
-    optimizer,
-    x -> sin(x),
-    -π,
-    π,
-    0.2,
-    :combined,
-    detail = 30,
-    knots = [-π / 2, 0.0, π / 2],
-    #knots=[π*i/2 for i in -1:1]
-)
-
-plot_approximation(
-    optimizer,
-    x -> x^2,
-    -10,
-    10,
-    1,
-    :combined,
-    detail = 100,
-    #knots = nothing,
-    knots = [0.0],
-    #knots=[π*i/2 for i in -1:1]
-)

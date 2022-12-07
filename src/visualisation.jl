@@ -33,7 +33,7 @@ function plot_approximation(
     elseif typeof(knots) == Vector{Float64}
         knots2 = copy(knots)
     else
-        knots2 = [knots[i][1] for i in 1:length(knots)]
+        knots2 = [knots[i][1] for i in eachindex(knots)]
     end
 
     insert!(knots2, 1, lb)
@@ -58,7 +58,7 @@ function plot_approximation(
     end
 
     fx = Float64[]
-    for i in 1:length(x)
+    for i in eachindex(x)
         fxi = func(x[i])[1]
         if typeof(fxi) <: Real
             push!(fx, fxi)
@@ -66,6 +66,5 @@ function plot_approximation(
             push!(fx, fxi[1])
         end
     end
-    Plots.plot(x, fx)
-    return Plots.plot!(x, y)
+    return [x, fx, y]
 end

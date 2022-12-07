@@ -1,6 +1,6 @@
 module PoGO
 
-using JuMP, Plots, ForwardDiff, Delaunay
+using JuMP, ForwardDiff, Delaunay
 
 import Base: ==
 
