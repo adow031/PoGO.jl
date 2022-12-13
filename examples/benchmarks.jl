@@ -11,7 +11,7 @@ function benchmark_methods(test_fn::Function)
     )
     methods = [:bisection, :binary, :echelon, :SOS1, :SOS2]
 
-    global a, b, c, d
+    global a , b , c , d
     d = test_fn
     for (sym, opt) in optimizers
         for m in methods
