@@ -2,7 +2,7 @@ function bilinear(
     x::Union{VariableRef,AffExpr},
     y::Union{VariableRef,AffExpr},
     n::Int = 0;
-    method::Symbol = :echelon,
+    method::Symbol = :default,
     type::Symbol = :interior,
     name::String = "",
 )
@@ -189,7 +189,9 @@ function bilinear(
         end
     end
 
-    if n <= 1
+    if n == 0
+        n = parse(Int, get(ENV, "POGO_N", "10"))
+    elseif n == 1
         error("n must be at least 2.")
     end
 
@@ -247,7 +249,7 @@ function power(
     x::Union{VariableRef,AffExpr},
     y::Union{VariableRef,AffExpr},
     n::Int;
-    method::Symbol = :echelon,
+    method::Symbol = :default,
     type::Symbol = :interior,
     name::String = "",
 )

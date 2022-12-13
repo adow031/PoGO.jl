@@ -5,6 +5,8 @@ struct Point
     y::Real
 end
 
+PoGO.set_default(:n, 50)
+
 points = Point[]
 push!(points, Point(-0.75, 0.5))
 push!(points, Point(0, 1))
@@ -31,27 +33,26 @@ model = JuMP.Model(Gurobi.Optimizer)
 sinθ = approximate(θ, a -> sin(a), 50)
 cosθ = approximate(θ, a -> cos(a), 50)
 
-msinθ = bilinear(m, sinθ, 50)
-mcosθ = bilinear(m, cosθ, 50)
+mcosθ = m * cosθ
+msinθ = m * sinθ
 
-for i in 1:length(points)
+for i in eachindex(points)
     @constraint(model, px[i] == sx + mcosθ * points[i].x - msinθ * points[i].y)
     @constraint(model, py[i] == sy + msinθ * points[i].x + mcosθ * points[i].y)
-    @constraint(model, sum(α[i, j] for j in 1:length(roughs)) == 1)
-    for j in 1:length(roughs)
-        @constraint(model, px[i] == sum(α[i, j] * roughs[j].x for j in 1:length(roughs)))
-        @constraint(model, py[i] == sum(α[i, j] * roughs[j].y for j in 1:length(roughs)))
-    end
+    @constraint(model, sum(α[i, j] for j in eachindex(roughs)) == 1)
+    @constraint(model, px[i] == sum(α[i, j] * roughs[j].x for j in eachindex(roughs)))
+    @constraint(model, py[i] == sum(α[i, j] * roughs[j].y for j in eachindex(roughs)))
 end
 
 @objective(model, Max, m)
 optimize!(model)
 
 value.(θ)
+value.(m)
 
 Plots.plot(
-    [value.(model[:px])[i] for i in [1:length(points); 1]],
-    [value.(model[:py])[i] for i in [1:length(points); 1]],
+    [value.(model[:px])[i] for i in [eachindex(points); 1]],
+    [value.(model[:py])[i] for i in [eachindex(points); 1]],
     aspect_ratio = :equal,
 )
 Plots.plot!(

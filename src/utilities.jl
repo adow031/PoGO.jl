@@ -327,3 +327,19 @@ function infer_curvature(
         push!(knots, (ux, get_curve(f, m)))
     end
 end
+
+function set_default(sym::Symbol, value::Any)
+    if sym == :n
+        if !(typeof(value) <: Int) || value <= 1
+            error("The number of breakpoints to add between knots must be an integer ≥ 2.")
+        end
+        ENV["POGO_N"] = value
+    elseif :method
+        if typeof(value) != Symbol ||
+           value ∉ [:convex, :SOS1, :SOS2, :binary, :echelon, :bisection]
+            error("Invalid default method")
+        end
+        ENV["POGO_METHOD"] = value
+    end
+    return nothing
+end

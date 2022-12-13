@@ -1,13 +1,16 @@
 function interpolate(
     x_vector::Vector{<:Union{VariableRef,AffExpr}},
     points::Vector{<:Tuple},
-    sets::Vector,
-    n::Int = 0;
+    sets::Vector;
     update_bounds::Bool = false,
-    method::Symbol = :binary,
+    method::Symbol = :default,
     name::String = "",
 )
     methods = [:convex, :SOS1, :binary, :bisection]
+
+    if method == :default
+        method = Symbol(get(ENV, "POGO_METHOD", "binary"))
+    end
 
     if method ∉ methods
         error("Invalid method.")
@@ -151,7 +154,7 @@ function interpolate_fn(
     f::Function,
     x_vector::Vector{<:Union{VariableRef,AffExpr}},
     grid::Vector{<:Union{AbstractRange,Vector{<:Real}}};
-    method::Symbol = :binary,
+    method::Symbol = :default,
 )
     points = collect(Iterators.product(grid...))
     if !(typeof(points) <: Matrix)
@@ -168,7 +171,7 @@ function interpolate_fn(
     f::Function,
     x_vector::Vector{<:Union{VariableRef,AffExpr}},
     points::T where {T<:Matrix};
-    method::Symbol = :binary,
+    method::Symbol = :default,
 )
     y_matrix = nothing
     for i in 1:size(points)[1]
@@ -188,7 +191,7 @@ end
 function interpolate_points(
     x_vector::Vector{<:Union{VariableRef,AffExpr}},
     points::T where {T<:Matrix};
-    method::Symbol = :binary,
+    method::Symbol = :default,
 )
     mesh = delaunay(points[:, 1:length(x_vector)])
     points2 = Tuple[]

@@ -3,12 +3,16 @@ function approximate(
     func::Function,
     n::Int = 0;
     δ::Real = 0.0,
-    method::Symbol = :echelon,
+    method::Symbol = :default,
     type::Symbol = :interior,
     knots::Union{Nothing,Vector{Float64},Vector{Tuple{Float64,Symbol}}} = nothing,
     name::String = "",
 )
     methods = [:convex, :SOS1, :SOS2, :binary, :echelon, :bisection]
+
+    if method == :default
+        method = Symbol(get(ENV, "POGO_METHOD", "echelon"))
+    end
 
     if method ∉ methods
         error("Invalid method.")
@@ -31,7 +35,7 @@ function approximate(
 
     if x_type == :binary || x_type == :integer || x_type == :discrete
         method2 = :discrete
-        if x_values == nothing
+        if x_values === nothing
             x_values = collect(ceil(lx - 0.01):floor(ux + 0.01))
         end
         knots = [float(i) for i in x_values]
@@ -39,6 +43,10 @@ function approximate(
     else
         knots = infer_curvature(func, knots, lx, ux)
         knots, knots_shape = process_knots(knots, lx, ux)
+    end
+
+    if n == 0
+        n = parse(Int, get(ENV, "POGO_N", "10"))
     end
 
     xi, fxi = find_points(lx, ux, func, n, δ, knots, knots_shape, type)
