@@ -160,10 +160,7 @@ function interpolate_fn(
     if !(typeof(points) <: Matrix)
         points = collect(points)
     end
-    points2 = convert(
-        Matrix,
-        transpose(hcat(collect.(vcat([points[i, :] for i in 1:size(points, 1)]...))...)),
-    )
+    points2 = convert(Matrix, transpose(hcat(collect.(vcat(points...))...)))
     return interpolate_fn(f, x_vector, points2; method = method)
 end
 
