@@ -13,7 +13,7 @@ include("interpolation.jl")
 include("visualisation.jl")
 
 function (*)(x::U, y::T) where {U<:Union{VariableRef,AffExpr},T<:Union{VariableRef,AffExpr}}
-    return bilinear(x, y, parse(Int, get(ENV, "POGO_N", "10")))
+    return bilinear(x, y)
 end
 
 export bilinear,

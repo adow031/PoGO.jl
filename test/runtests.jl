@@ -39,6 +39,22 @@ function binary_bilinear(profit_xy, cost_x, cost_y)
     return objective_value(model)
 end
 
+function binary_bilinear2()
+    model = Model(GLPK.Optimizer)
+
+    @variable(model, x, Bin)
+    @variable(model, z, Bin)
+    @variable(model, 0 <= y <= 10)
+
+    @constraint(model, x * y * z == 5)
+
+    @objective(model, Min, 10 * x + y)
+
+    optimize!(model)
+
+    return objective_value(model)
+end
+
 function fixed_cost_investment(cost)
     model = JuMP.Model(GLPK.Optimizer)
 
@@ -63,7 +79,7 @@ function integer_bilinear(param::Real)
     @variable(model, 0 <= y <= 10, Int)
     @constraint(model, x + param * y == 10)
 
-    @objective(model, Max, bilinear(x, y))
+    @objective(model, Max, (bilinear(x, y) + bilinear(y, x)) / 2)
 
     optimize!(model)
     return objective_value(model)
@@ -274,10 +290,10 @@ end
 function negative_power(rhs::Real)
     model = Model(GLPK.Optimizer)
 
-    x = @variable(model, -5 <= x <= -1)
-    y = @variable(model, -3 <= y <= 5, Int)
+    @variable(model, -6 <= x <= -1)
+    @variable(model, -3 <= y <= 5, Int)
 
-    z = power(x, y, 10)
+    z = power(x, y, 20)
 
     @constraint(model, z == rhs)
 
@@ -305,10 +321,14 @@ end
     @test binary_bilinear(10, 4, 1) ≈ 5.0 atol = 1e-4
     @test binary_bilinear(10, 6, 5) ≈ 0.0 atol = 1e-4
 
+    @test binary_bilinear2() ≈ 15.0 atol = 1e-4
+
     @test integer_bilinear(1) ≈ 25.0 atol = 1e-4
     @test integer_bilinear(3) ≈ 8.0 atol = 1e-4
 
     @test bilinear_affexpr(80) ≈ 130.0 atol = 1e-4
+    @test bilinear_affexpr(120) ≈ 140.0 atol = 1e-4
+
     @test bilinear_affexpr(120) ≈ 140.0 atol = 1e-4
 
     @test fixed_cost_investment(40) ≈ 270.0 atol = 1e-4
@@ -351,11 +371,11 @@ end
     @test interp_pts(0.4, 0.4) ≈ 0.225 atol = 1e-3
 
     result = negative_power(-8)
-    @test sum(abs.(result - [-1.8934, 3.0, -8.0])) ≈ 0.0 atol = 1e-2
+    @test sum(abs.(result - [-1.9628, 3.0, -8.0])) ≈ 0.0 atol = 1e-2
     result = negative_power(-0.25)
-    @test sum(abs.(result - [-4.8408, -1.0, -0.25])) ≈ 0.0 atol = 1e-2
+    @test sum(abs.(result - [-4.2622, -1.0, -0.25])) ≈ 0.0 atol = 1e-2
     result = negative_power(16)
-    @test sum(abs.(result - [-3.8275, 2.0, 16.0])) ≈ 0.0 atol = 1e-2
+    @test sum(abs.(result - [-3.8890, 2.0, 16.0])) ≈ 0.0 atol = 1e-2
     result = negative_power(4)
-    @test sum(abs.(result - [-1.8810, 2.0, 4.0])) ≈ 0.0 atol = 1e-2
+    @test sum(abs.(result - [-1.9425, 2.0, 4.0])) ≈ 0.0 atol = 1e-2
 end
