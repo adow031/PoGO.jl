@@ -308,6 +308,9 @@ end
     result = nonlinear(10, :binary)
     @test sum(abs.(result - [1.6, 4.0, 0.37866])) ≈ 0.0 atol = 1e-4
 
+    result = nonlinear(10, :bisection)
+    @test sum(abs.(result - [1.6, 4.0, 0.37866])) ≈ 0.0 atol = 1e-4    
+
     result = nonlinear(20, :echelon)
     @test sum(abs.(result - [1.4, 3.8, 0.3878])) ≈ 0.0 atol = 1e-4
 
