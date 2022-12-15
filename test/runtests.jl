@@ -76,7 +76,7 @@ function integer_bilinear(param::Real)
     model = JuMP.Model(GLPK.Optimizer)
 
     @variable(model, 0 <= x <= 10, Int)
-    @variable(model, 0 <= y <= 10, Int)
+    @variable(model, 0 <= y <= 12, Int)
     @constraint(model, x + param * y == 10)
 
     @objective(model, Max, (bilinear(x, y) + bilinear(y, x)) / 2)
@@ -304,12 +304,29 @@ function negative_power(rhs::Real)
     return [value(model[:x]), value(model[:y]), value(z)]
 end
 
+function positive_power(rhs::Real)
+    model = Model(GLPK.Optimizer)
+
+    @variable(model, 1 <= x <= 6)
+    @variable(model, -3 <= y <= 5, Int)
+
+    z = PoGO.power(x, y, 20)
+
+    @constraint(model, z == rhs)
+
+    @objective(model, Min, x)
+
+    optimize!(model)
+
+    return [value(model[:x]), value(model[:y]), value(z)]
+end
+
 @testset "PoGO.jl" begin
     result = nonlinear(10, :binary)
     @test sum(abs.(result - [1.6, 4.0, 0.37866])) ≈ 0.0 atol = 1e-4
 
     result = nonlinear(10, :bisection)
-    @test sum(abs.(result - [1.6, 4.0, 0.37866])) ≈ 0.0 atol = 1e-4    
+    @test sum(abs.(result - [1.6, 4.0, 0.37866])) ≈ 0.0 atol = 1e-4
 
     result = nonlinear(20, :echelon)
     @test sum(abs.(result - [1.4, 3.8, 0.3878])) ≈ 0.0 atol = 1e-4
@@ -381,4 +398,7 @@ end
     @test sum(abs.(result - [-3.8890, 2.0, 16.0])) ≈ 0.0 atol = 1e-2
     result = negative_power(4)
     @test sum(abs.(result - [-1.9425, 2.0, 4.0])) ≈ 0.0 atol = 1e-2
+
+    result = positive_power(2)
+    @test sum(abs.(result - [1.1413, 5.0, 2.0])) ≈ 0.0 atol = 1e-2
 end
