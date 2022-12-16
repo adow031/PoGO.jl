@@ -58,9 +58,15 @@ function interpolate(
 
     all_sets = Vector{Any}()
     for s in sets
-        for i in s
-            if i ∉ all_sets
-                push!(all_sets, i)
+        if typeof(s) <: Vector
+            for i in s
+                if i ∉ all_sets
+                    push!(all_sets, i)
+                end
+            end
+        else
+            if s ∉ all_sets
+                push!(all_sets, s)
             end
         end
     end
@@ -128,7 +134,11 @@ function interpolate(
     end
 
     for p in eachindex(points)
-        @constraint(model, α[p] <= sum(z[j] for j in sets[p]))
+        if typeof(sets[p]) <: Vector
+            @constraint(model, α[p] <= sum(z[j] for j in sets[p]))
+        else
+            @constraint(model, α[p] <= z[sets[p]])
+        end
     end
     @constraint(model, sum(values(z)) == 1)
 
@@ -216,4 +226,25 @@ function interpolate_points(
 
     interpolate(x_vector, points2, sets; method = method)
     return length(z) > 1 ? z : length(z) == 1 ? z[1] : nothing
+end
+
+function set_var_domain(x::Union{VariableRef,AffExpr}, domain::Vector)
+    sets = []
+    vals = Tuple[]
+
+    for d in domain
+        if typeof(d) == Int
+            push!(vals, (d,))
+            push!(sets, d)
+        elseif typeof(d) == Vector{<:Real} || length(d) == 2
+            push!(vals, (d[1],))
+            push!(vals, (d[2],))
+            push!(sets, Tuple(d))
+            push!(sets, Tuple(d))
+        else
+            error("Invalid domain specified")
+        end
+    end
+
+    return interpolate([x], vals, sets)
 end

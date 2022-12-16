@@ -321,6 +321,20 @@ function positive_power(rhs::Real)
     return [value(model[:x]), value(model[:y]), value(z)]
 end
 
+function domain_test(d::Real)
+    model = JuMP.Model(GLPK.Optimizer)
+
+    @variable(model, x)
+    @variable(model, y >= 0)
+    z = x ∈ [0, [2, 3]]
+
+    @objective(model, Min, 10 * z[(2, 3)] + x + 5 * y)
+    @constraint(model, x + y >= d)
+    optimize!(model)
+
+    return [value(x), value(y)]
+end
+
 @testset "PoGO.jl" begin
     result = nonlinear(10, :binary)
     @test sum(abs.(result - [1.6, 4.0, 0.37866])) ≈ 0.0 atol = 1e-4
@@ -401,4 +415,11 @@ end
 
     result = positive_power(2)
     @test sum(abs.(result - [1.1413, 5.0, 2.0])) ≈ 0.0 atol = 1e-2
+
+    result = domain_test(2)
+    @test sum(abs.(result - [0.0, 2.0])) ≈ 0.0 atol = 1e-2
+    result = domain_test(3)
+    @test sum(abs.(result - [3.0, 0.0])) ≈ 0.0 atol = 1e-2
+    result = domain_test(4)
+    @test sum(abs.(result - [3.0, 1.0])) ≈ 0.0 atol = 1e-2
 end

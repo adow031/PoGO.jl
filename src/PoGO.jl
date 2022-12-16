@@ -2,7 +2,7 @@ module PoGO
 
 using JuMP, ForwardDiff, Delaunay
 
-import Base: ==, *
+import Base: ==, *, ∈
 
 (==)(x::U, y::T) where {U<:ForwardDiff.Dual,T<:Int} = x.value == y
 
@@ -14,6 +14,10 @@ include("visualisation.jl")
 
 function (*)(x::U, y::T) where {U<:Union{VariableRef,AffExpr},T<:Union{VariableRef,AffExpr}}
     return bilinear(x, y)
+end
+
+function (∈)(x::U, y::Vector) where {U<:Union{VariableRef,AffExpr}}
+    return set_var_domain(x, y)
 end
 
 export bilinear,
