@@ -45,10 +45,6 @@ function approximate(
         knots, knots_shape = process_knots(knots, lx, ux)
     end
 
-    if n == 0
-        n = parse(Int, get(ENV, "POGO_N", "10"))
-    end
-
     xi, fxi = find_points(lx, ux, func, n, δ, knots, knots_shape, type)
     n = length(xi) - 1
     set_lower_bound(fx, minimum(fxi))

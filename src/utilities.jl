@@ -157,10 +157,14 @@ function find_points(
         push!(xi, x)
         push!(fxi, f[2])
     end
-    n1 = n
+    no_n = false
+    if n == 0
+        no_n = true
+        n = parse(Int, get(ENV, "POGO_N", "10"))
+    end
     for j in 1:length(knots)-1
         shape = knots_shape[j]
-        if n1 == 0 && δ > 0.0
+        if no_n && δ > 0.0
             n = max(2, ceil(Int, (knots[j+1] - knots[j]) / δ))
         end
         if (shape == :concave && type == :upper) ||
@@ -243,7 +247,7 @@ function find_points(
 end
 
 function process_knots(
-    knots::Union{Vector{Tuple{Float64,Symbol}}},
+    knots::Vector{Tuple{Float64,Symbol}},
     lx::Real,
     ux::Real,
 )::Tuple{Vector{Float64},Vector{Symbol}}
@@ -258,13 +262,13 @@ function process_knots(
         deleteat!(knots, i)
     end
     i = length(knots)
-    while knots[i][1] > ux
+    while i > 0 && knots[i][1] > ux
         deleteat!(knots, i)
         i -= 1
     end
     knots_shape = [knots[i][2] for i in eachindex(knots)]
     knots = [knots[i][1] for i in eachindex(knots)]
-    if knots[1] > lx
+    if length(knots) == 0 || knots[1] > lx
         insert!(knots, 1, lx)
         insert!(knots_shape, 1, prev_shape)
     end
