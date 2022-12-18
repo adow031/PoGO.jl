@@ -335,12 +335,12 @@ function domain_test(d::Real)
     return [value(x), value(y)]
 end
 
-function bounds_test()
+function bounds_test(ie::Bool)
     model = JuMP.Model()
     @variable(model, a[1:2], Bin)
     @variable(model, 0 <= b[1:2] <= 5, Int)
 
-    return PoGO.find_bounds(a[1] - a[2] + b[1] - b[2])
+    return PoGO.find_bounds(a[1] - a[2] + b[1] - b[2], ignore_errors = ie)
 end
 
 function general_fn(; δ = 0.1, type = :interior)
@@ -470,7 +470,8 @@ end
     @test PoGO.process_knots([(1.0, :convex), (4.0, :concave)], 2, 3) ==
           ([2.0, 3.0], [:convex, :convex])
 
-    @test bounds_test() == (-6.0, 6.0)
+    @test bounds_test(false) == (-6.0, 6.0)
+    @test bounds_test(true) == (-6.0, 6.0)
 
     result = general_fn()
     @test sum(
