@@ -11,6 +11,8 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - uses: julia-actions/setup-julia@latest
+        env:
+          PYTHON: ""
         with:
           version: '1.6'
       - name: Install dependencies
@@ -18,5 +20,4 @@ jobs:
       - name: Build and deploy
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PYTHON: ""
         run: julia --project=docs/ docs/make.jl
