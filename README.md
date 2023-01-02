@@ -1,6 +1,6 @@
-| **Build Status** | **Coverage** |
-|:--------------------:|:----------------:|
-| [![Build Status][build-img]][build-url] | [![Codecov branch][codecov-img]][codecov-url]
+| **Documentation** | **Build Status** | **Coverage** |
+|:-----------------:|:--------------------:|:----------------:|
+| [![][docs-latest-img]][docs-latest-url] | [![Build Status][build-img]][build-url] | [![Codecov branch][codecov-img]][codecov-url]
 
 # PoGO.jl: Piecewise-linear approximation for Global Optimization
 
@@ -18,3 +18,5 @@ The key functions provided by this package are:
 [codecov-img]: https://codecov.io/github/adow031/PoGO.jl/coverage.svg?branch=main
 [codecov-url]: https://codecov.io/github/adow031/PoGO.jl?branch=main
 
+[docs-latest-img]: https://img.shields.io/badge/docs-latest-blue.svg
+[docs-latest-url]: https://adow031.github.io/PoGO.jl

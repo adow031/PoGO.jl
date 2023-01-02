@@ -1,3 +1,36 @@
+"""
+    interpolate(
+        x_vector::Vector{<:Union{VariableRef,AffExpr}},
+        points::Vector{<:Tuple},
+        sets::Vector;
+        update_bounds::Bool = false,
+        method::Symbol = :default,
+        name::String = "",
+    )
+
+Function that interpolates over a set of variables (or affine expressions). If the number of dimensions
+of the `points` vector exceeds the number of elements in the variables vector, then new variables are
+created and their values interpolated based on the other variables. If the dimensions of the `points`
+vector is the same as the number of variables then this enforces a constraint that the variables must
+lie inside the convex hull of one of the sets of points (defined by `sets`).
+
+### Required arguments
+`x_vector` vector of variables or expressions that will be used as the domain of the interpolation
+
+`points` vector of points that define the interpolation; these points can contain real number and as
+well as variables and expressions.
+
+`sets` for each point in the vector `points`, `sets` contains the name(s) of the sets that point is a
+member of. 
+
+### Optional arguments
+`update_bounds` is set to `true` if the upper and lower bounds of `x_vector` components should be
+updated based on the values in `points`.
+
+`method` if the formulation method and can be set to `:convex`, `:SOS1`, `:binary` or `:bisection`.
+
+`name` can be set to give the variables created meaningful names.
+"""
 function interpolate(
     x_vector::Vector{<:Union{VariableRef,AffExpr}},
     points::Vector{<:Tuple},
@@ -76,7 +109,6 @@ function interpolate(
     α = Dict()
 
     for p in eachindex(points)
-        point = points[p]
         α[p] = @variable(model)
         set_name(α[p], "α#$(p)")
         set_lower_bound(α[p], 0)
@@ -160,6 +192,28 @@ function interpolate(
     return z
 end
 
+"""
+    interpolate_fn(
+        f::Function,
+        x_vector::Vector{<:Union{VariableRef,AffExpr}},
+        grid::Vector{<:Union{AbstractRange,Vector{<:Real}}};
+        method::Symbol = :default,
+    )
+
+Function that interpolates a function `f` over a set of variables (or affine expressions). The `grid`
+vector should be the same length as the `x_vector`. 
+
+### Required arguments
+`f` a possibly multidimensional function that takes a vector of arguments the same length as `x_vector`.
+
+`x_vector` a vector of variables or expressions that are the input vector for `f`.
+
+`grid` is a vector of ranges or vectors that specify the sample points (which are the Cartesian product
+of the vectors) for the function `f`.
+
+### Optional arguments
+`method` if the formulation method and can be set to `:convex`, `:SOS1`, `:binary` or `:bisection`.
+"""
 function interpolate_fn(
     f::Function,
     x_vector::Vector{<:Union{VariableRef,AffExpr}},
@@ -174,6 +228,27 @@ function interpolate_fn(
     return interpolate_fn(f, x_vector, points2; method = method)
 end
 
+"""
+    interpolate_fn(
+        f::Function,
+        x_vector::Vector{<:Union{VariableRef,AffExpr}},
+        points::T where {T<:Matrix};
+        method::Symbol = :default,
+    )
+
+Function that interpolates a function `f` over a set of variables (or affine expressions). The number
+of columns of the `points` matrix should be the same as the length of the `x_vector`. 
+
+### Required arguments
+`f` a possibly multidimensional function that takes a vector of arguments the same length as `x_vector`.
+
+`x_vector` a vector of variables or expressions that are the input vector for `f`.
+
+`points` is a `Matrix` that specifies the sample points for the function.
+
+### Optional arguments
+`method` if the formulation method and can be set to `:convex`, `:SOS1`, `:binary` or `:bisection`.
+"""
 function interpolate_fn(
     f::Function,
     x_vector::Vector{<:Union{VariableRef,AffExpr}},
@@ -195,6 +270,25 @@ function interpolate_fn(
     return interpolate_points(x_vector, points2; method = method)
 end
 
+"""
+    interpolate_points(
+        x_vector::Vector{<:Union{VariableRef,AffExpr}},
+        points::T where {T<:Matrix};
+        method::Symbol = :default,
+    )
+
+Function that interpolates over a set of variables (or affine expressions). The number of columns of
+the `points` matrix should be greater than or equal to the length of the `x_vector`. For any extra
+columns, new variables will be defined, and their values will be interpolated. 
+
+### Required arguments
+`x_vector` a vector of variables or expressions around which the triangulation will be formed.
+
+`points` is a `Matrix` that specifies the points to be interpolated.
+
+### Optional arguments
+`method` if the formulation method and can be set to `:convex`, `:SOS1`, `:binary` or `:bisection`.
+"""
 function interpolate_points(
     x_vector::Vector{<:Union{VariableRef,AffExpr}},
     points::T where {T<:Matrix};

@@ -1,3 +1,8 @@
+"""
+    get_model(x::Union{VariableRef,AffExpr})
+
+Internal function that gets the model associated with a variable or affine expression.
+"""
 function get_model(x::Union{VariableRef,AffExpr})
     if typeof(x) == VariableRef
         return x.model
@@ -6,6 +11,12 @@ function get_model(x::Union{VariableRef,AffExpr})
     end
 end
 
+"""
+get_type(x::Union{VariableRef,AffExpr})
+
+Internal function that gets the type of a variable or affine expression. This can be `:binary`,
+`:integer`, `:continuous` or `:discrete`.
+"""
 function get_type(x::Union{VariableRef,AffExpr})
     if typeof(x) == VariableRef
         if is_binary(x)
@@ -59,6 +70,13 @@ function get_type(x::Union{VariableRef,AffExpr})
     end
 end
 
+"""
+find_bounds(x::Union{VariableRef,AffExpr}; ignore_errors = false)
+
+Internal function that finds the upper and lower bounds of a variable or affine expression.
+`ignore_errors` can be set to `true` if we are happy to get `Inf` or `-Inf` if the bounds are not
+defined.
+"""
 function find_bounds(x::Union{VariableRef,AffExpr}; ignore_errors = false)
     if typeof(x) == VariableRef
         if is_binary(x)
@@ -131,9 +149,20 @@ function find_bounds(x::Union{VariableRef,AffExpr}; ignore_errors = false)
     return lx, ux
 end
 
+"""
+    find_points(
+        func::Function,
+        n::Integer,
+        δ::Real,
+        knots::Vector{Float64},
+        knots_shape::Vector{Symbol},
+        type::Symbol,
+    )
+
+Internal function that finds all the points and corresponding function values, given knots and the
+sampling rate.
+"""
 function find_points(
-    lx::Real,
-    ux::Real,
     func::Function,
     n::Integer,
     δ::Real,
@@ -246,6 +275,15 @@ function find_points(
     return xi, fxi
 end
 
+"""
+    process_knots(
+        knots::Vector{Tuple{Float64,Symbol}},
+        lx::Real,
+        ux::Real,
+    )::Tuple{Vector{Float64},Vector{Symbol}}
+
+Internal function that trims or extends the knots, given the lower and upper bounds.
+"""
 function process_knots(
     knots::Vector{Tuple{Float64,Symbol}},
     lx::Real,
@@ -279,6 +317,17 @@ function process_knots(
     return knots, knots_shape
 end
 
+"""
+    infer_curvature(
+        f::Function,
+        knots::Union{Nothing,Vector{Float64},Vector{Tuple{Float64,Symbol}}},
+        lx::Real,
+        ux::Real,
+    )
+
+Internal function that uses automatic differentiation to infer the curvature of the function `f`
+between the bounds and the knots.
+"""
 function infer_curvature(
     f::Function,
     knots::Union{Nothing,Vector{Float64},Vector{Tuple{Float64,Symbol}}},
@@ -332,6 +381,16 @@ function infer_curvature(
     end
 end
 
+"""
+    set_default(sym::Symbol, value::Any)
+
+Function that sets the defaults settings for `n` and `method`.
+
+### Required arguments
+`sym` the parameter that is being given a new default `:n` or `:method`.
+
+`value` the new default parameter value.
+"""
 function set_default(sym::Symbol, value::Any)
     if sym == :n
         if !(typeof(value) <: Int) || value <= 1
