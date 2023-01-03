@@ -8,11 +8,8 @@
         name::String = "",
     )
 
-Function that interpolates over a set of variables (or affine expressions). If the number of dimensions
-of the `points` vector exceeds the number of elements in the variables vector, then new variables are
-created and their values interpolated based on the other variables. If the dimensions of the `points`
-vector is the same as the number of variables then this enforces a constraint that the variables must
-lie inside the convex hull of one of the sets of points (defined by `sets`).
+Function that constrains the variables to lie inside the convex hull of one of the sets of points
+(defined by `sets`).
 
 ### Required arguments
 `x_vector` vector of variables or expressions that will be used as the domain of the interpolation
@@ -39,6 +36,12 @@ function interpolate(
     method::Symbol = :default,
     name::String = "",
 )
+    if length(x_vector) != length(points[1])
+        error(
+            "interpolate() function must be provided with a vector of variables ('x_vector') which is the same length as the dimensions of the each of the points in 'points'.",
+        )
+    end
+
     methods = [:convex, :SOS1, :binary, :bisection]
 
     if method == :default

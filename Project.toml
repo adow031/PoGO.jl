@@ -1,7 +1,7 @@
 name = "PoGO"
 uuid = "043b967d-4e64-47a6-97d4-0007e6b4905c"
 authors = ["Anthony Downward"]
-version = "0.3.6"
+version = "0.3.7"
 
 [deps]
 Delaunay = "07eb4e4e-0c6d-46ef-bc4e-83d5e5d860a9"

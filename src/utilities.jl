@@ -12,7 +12,7 @@ function get_model(x::Union{VariableRef,AffExpr})
 end
 
 """
-get_type(x::Union{VariableRef,AffExpr})
+    get_type(x::Union{VariableRef,AffExpr})
 
 Internal function that gets the type of a variable or affine expression. This can be `:binary`,
 `:integer`, `:continuous` or `:discrete`.
@@ -71,7 +71,7 @@ function get_type(x::Union{VariableRef,AffExpr})
 end
 
 """
-find_bounds(x::Union{VariableRef,AffExpr}; ignore_errors = false)
+    find_bounds(x::Union{VariableRef,AffExpr}; ignore_errors = false)
 
 Internal function that finds the upper and lower bounds of a variable or affine expression.
 `ignore_errors` can be set to `true` if we are happy to get `Inf` or `-Inf` if the bounds are not
