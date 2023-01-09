@@ -3,11 +3,13 @@
 ## PoGO.jl exported functions
 ```@docs
 PoGO.approximate
+PoGO.bilinear
 PoGO.interpolate
 PoGO.interpolate_fn
 PoGO.interpolate_points
 PoGO.plot_approximation
 PoGO.power
+PoGO.set_var_domain
 ```
 
 ## PoGO.jl internal functions

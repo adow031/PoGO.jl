@@ -12,19 +12,18 @@ Function that constrains the variables to lie inside the convex hull of one of t
 (defined by `sets`).
 
 ### Required arguments
-`x_vector` vector of variables or expressions that will be used as the domain of the interpolation
+`x_vector` is the vector of variables or expressions that will be used as the domain of the interpolation
 
-`points` vector of points that define the interpolation; these points can contain real number and as
+`points` is the vector of points that define the interpolation; these points can contain real number as
 well as variables and expressions.
 
-`sets` for each point in the vector `points`, `sets` contains the name(s) of the sets that point is a
-member of. 
+`sets` specifies the name(s) of the set(s) of which each point in the vector `points` is a member. 
 
 ### Optional arguments
 `update_bounds` is set to `true` if the upper and lower bounds of `x_vector` components should be
 updated based on the values in `points`.
 
-`method` if the formulation method and can be set to `:convex`, `:SOS1`, `:binary` or `:bisection`.
+`method` is the formulation method and can be set to `:convex`, `:SOS1`, `:binary` or `:bisection`.
 
 `name` can be set to give the variables created meaningful names.
 """
@@ -243,9 +242,9 @@ Function that interpolates a function `f` over a set of variables (or affine exp
 of columns of the `points` matrix should be the same as the length of the `x_vector`. 
 
 ### Required arguments
-`f` a possibly multidimensional function that takes a vector of arguments the same length as `x_vector`.
+`f` is a possibly multidimensional function that takes a vector of arguments the same length as `x_vector`.
 
-`x_vector` a vector of variables or expressions that are the input vector for `f`.
+`x_vector` is a vector of variables or expressions that are the input vector for `f`.
 
 `points` is a `Matrix` that specifies the sample points for the function.
 
@@ -285,12 +284,12 @@ the `points` matrix should be greater than or equal to the length of the `x_vect
 columns, new variables will be defined, and their values will be interpolated. 
 
 ### Required arguments
-`x_vector` a vector of variables or expressions around which the triangulation will be formed.
+`x_vector` is a vector of variables or expressions around which the triangulation will be formed.
 
 `points` is a `Matrix` that specifies the points to be interpolated.
 
 ### Optional arguments
-`method` if the formulation method and can be set to `:convex`, `:SOS1`, `:binary` or `:bisection`.
+`method` is the formulation method and can be set to `:convex`, `:SOS1`, `:binary` or `:bisection`.
 """
 function interpolate_points(
     x_vector::Vector{<:Union{VariableRef,AffExpr}},
@@ -325,6 +324,16 @@ function interpolate_points(
     return length(z) > 1 ? z : length(z) == 1 ? z[1] : nothing
 end
 
+"""
+    set_var_domain(x::Union{VariableRef,AffExpr}, domain::Vector)
+
+Function that specifies a domain for variable `x`. This can include discrete values as well as intervals.
+
+### Required arguments
+`x` is either a `VariableRef` or an `AffExpr`.
+
+`domain` is a vector of values and / or intervals, defining the feasible region for `x`.
+"""
 function set_var_domain(x::Union{VariableRef,AffExpr}, domain::Vector)
     sets = []
     vals = Tuple[]
